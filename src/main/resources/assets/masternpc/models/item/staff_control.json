@@ -1,0 +1,18 @@
+{
+  "parent": "minecraft:item/handheld",
+  "loader": "neoforge:separate_transforms",
+  "base": {
+    "parent": "masternpc:item/staff_control_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "masternpc:item/staff_control_2d"
+    },
+    "ground": {
+      "parent": "masternpc:item/staff_control_2d"
+    },
+    "fixed": {
+      "parent": "masternpc:item/staff_control_2d"
+    }
+  }
+}

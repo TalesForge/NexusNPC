@@ -1,0 +1,20 @@
+{
+  "creativetab.masternpc.all": "MasterNPC",
+
+  "item.masternpc.staff_control": "Жезл контроля",
+
+  "item.masternpc.npc_spawn_egg": "NPC",
+
+  "entity.masternpc.npc": "NPC",
+
+  "block.masternpc.example_block": "Блок-пример",
+  "item.masternpc.example_item": "Предмет-пример",
+
+  "masternpc.configuration.title": "Настройки MasterNPC",
+  "masternpc.configuration.section.masternpc.common.toml": "Настройки MasterNPC",
+  "masternpc.configuration.section.masternpc.common.toml.title": "Настройка MasterNPC",
+  "masternpc.configuration.items": "Список предметов",
+  "masternpc.configuration.logDirtBlock": "Log блока грязи",
+  "masternpc.configuration.magicNumberIntroduction": "Текст магического числа",
+  "masternpc.configuration.magicNumber": "Магическое число"
+}

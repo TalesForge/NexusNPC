@@ -1,0 +1,20 @@
+{
+  "creativetab.masternpc.all": "MasterNPC",
+
+  "item.masternpc.staff_control": "Staff of Control",
+
+  "item.masternpc.npc_spawn_egg": "NPC",
+
+  "entity.masternpc.npc": "NPC",
+
+  "block.masternpc.example_block": "Example Block",
+  "item.masternpc.example_item": "Example Item",
+
+  "masternpc.configuration.title": "MasterNPC Configs",
+  "masternpc.configuration.section.masternpc.common.toml": "MasterNPC Configs",
+  "masternpc.configuration.section.masternpc.common.toml.title": "MasterNPC Configs",
+  "masternpc.configuration.items": "Item List",
+  "masternpc.configuration.logDirtBlock": "Log Dirt Block",
+  "masternpc.configuration.magicNumberIntroduction": "Magic Number Text",
+  "masternpc.configuration.magicNumber": "Magic Number"
+}
