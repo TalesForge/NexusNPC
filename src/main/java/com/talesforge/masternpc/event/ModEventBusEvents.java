@@ -1,9 +1,9 @@
 package com.talesforge.masternpc.event;
 
 import com.talesforge.masternpc.MasterNPC;
-import com.talesforge.masternpc.entity.ModEntities;
+import com.talesforge.masternpc.api.MasterNpcApi;
+import com.talesforge.masternpc.api.NpcTypeEntry;
 import com.talesforge.masternpc.entity.client.NpcModel;
-import com.talesforge.masternpc.entity.custom.NpcEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -18,6 +18,8 @@ public class ModEventBusEvents {
 
     @SubscribeEvent
     public static void registerAttributes(EntityAttributeCreationEvent event) {
-        event.put(ModEntities.NPC.get(), NpcEntity.createAttributes().build());
+        for (NpcTypeEntry entry : MasterNpcApi.types()) {
+            event.put(entry.type().get(), entry.attributes().get().build());
+        }
     }
 }

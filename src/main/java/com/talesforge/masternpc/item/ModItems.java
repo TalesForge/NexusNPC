@@ -3,6 +3,7 @@ package com.talesforge.masternpc.item;
 import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.block.ModBlocks;
 import com.talesforge.masternpc.entity.ModEntities;
+import com.talesforge.masternpc.item.custom.StaffControlItem;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -14,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ModItems {
@@ -39,23 +41,30 @@ public class ModItems {
 
     // ===== Helpers for register =====
     // Items
-    static <T extends Item> DeferredItem<T> registerItem(String name, ItemCategory category, Supplier<T> supplier) {
+    static <T extends Item> DeferredItem<T> regItem(String name, ItemCategory category,
+                                                         Function<Item.Properties, T> factory,
+                                                         Item.Properties properties) {
+        DeferredItem<T> item = ITEMS.registerItem(name, factory, properties);
+        CATEGORIZED.get(category).add(item);
+        return item;
+    }
+    static <T extends Item> DeferredItem<T> regItem(String name, ItemCategory category, Supplier<T> supplier) {
         DeferredItem<T> item = ITEMS.register(name, supplier);
         CATEGORIZED.get(category).add(item);
         return item;
     }
-    static DeferredItem<Item> registerItem(String name, ItemCategory category, Item.Properties properties) {
-        return registerItem(name, category, () -> new Item(properties));
+    static DeferredItem<Item> regItem(String name, ItemCategory category, Item.Properties properties) {
+        return regItem(name, category, () -> new Item(properties));
     }
-    static DeferredItem<BlockItem> registerItem(String name, ItemCategory category, DeferredBlock<Block> block, Item.Properties properties) {
-        return registerItem(name, category, () -> new BlockItem(block.get(), properties));
+    static DeferredItem<BlockItem> regItem(String name, ItemCategory category, DeferredBlock<Block> block, Item.Properties properties) {
+        return regItem(name, category, () -> new BlockItem(block.get(), properties));
     }
 
 
 
 
     // ===== ITEMS =====
-    public static final DeferredItem<Item> EXAMPLE_ITEM = registerItem("example_item",
+    public static final DeferredItem<Item> EXAMPLE_ITEM = regItem("example_item",
             ItemCategory.MISC,
             new Item.Properties()
                     .food(new FoodProperties.Builder()
@@ -66,14 +75,15 @@ public class ModItems {
                     )
     );
 
-    public static final DeferredItem<Item> STAFF_CONTROL = registerItem("staff_control",
+    public static final DeferredItem<Item> STAFF_CONTROL = regItem("staff_control",
             ItemCategory.TOOLS,
+            StaffControlItem::new,
             new Item.Properties()
                     .stacksTo(1)
     );
 
 
-    public static final DeferredItem<Item> NPC_SPAWN_EGG = registerItem("npc_spawn_egg",
+    public static final DeferredItem<Item> NPC_SPAWN_EGG = regItem("npc_spawn_egg",
             ItemCategory.MISC,
             () -> new DeferredSpawnEggItem(ModEntities.NPC, 0x31afaf, 0xffac00,
                     new Item.Properties())
@@ -82,7 +92,7 @@ public class ModItems {
 
 
     // ===== BLOCKS ITEMS =====
-    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = registerItem("example_block",
+    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = regItem("example_block",
             ItemCategory.BLOCKS,
             ModBlocks.EXAMPLE_BLOCK,
             new Item.Properties()

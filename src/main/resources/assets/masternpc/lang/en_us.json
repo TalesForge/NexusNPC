@@ -16,5 +16,29 @@
   "masternpc.configuration.items": "Item List",
   "masternpc.configuration.logDirtBlock": "Log Dirt Block",
   "masternpc.configuration.magicNumberIntroduction": "Magic Number Text",
-  "masternpc.configuration.magicNumber": "Magic Number"
+  "masternpc.configuration.magicNumber": "Magic Number",
+
+
+
+  "npc_attitude.masternpc.friendly": "Friendly",
+  "npc_attitude.masternpc.neutral": "Neutral",
+  "npc_attitude.masternpc.hostile": "Hostile",
+
+  "npc_behavior.masternpc.stay": "Stay",
+  "npc_behavior.masternpc.wander": "Wander",
+  "npc_behavior.masternpc.avoid_players": "Avoid players",
+
+  "gui.masternpc.editor.title": "NPC Settings",
+  "gui.masternpc.creator.title": "Create NPC",
+  "gui.masternpc.type": "Type",
+  "gui.masternpc.name": "Name",
+  "gui.masternpc.attitude": "Attitude",
+  "gui.masternpc.behavior": "Behavior",
+  "gui.masternpc.skin": "Skin",
+  "gui.masternpc.health": "Health",
+  "gui.masternpc.damage": "Damage",
+  "gui.masternpc.speed": "Speed",
+  "message.masternpc.npc_busy": "Another player is already configuring this NPC",
+  "gui.masternpc.save": "Save",
+  "gui.masternpc.create": "Create"
 }

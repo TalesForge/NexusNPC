@@ -15,8 +15,8 @@ public class NpcRenderer extends MobRenderer<NpcEntity, NpcModel<NpcEntity>> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(NpcEntity npcEntity) {
-        return ResourceLocation.fromNamespaceAndPath(MasterNPC.MOD_ID, "textures/entity/npc/npc_base.png");
+    public ResourceLocation getTextureLocation(NpcEntity entity) {
+        return entity.getSkinTexture();
     }
 
     @Override

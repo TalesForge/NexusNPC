@@ -1,9 +1,14 @@
 package com.talesforge.masternpc;
 
 import com.talesforge.masternpc.block.ModBlocks;
+import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.item.ModItems;
 import com.talesforge.masternpc.item.ModCreativeModeTabs;
+import com.talesforge.masternpc.network.ModNetwork;
+import com.talesforge.masternpc.npc.NpcRegistries;
+import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
+import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -39,6 +44,13 @@ public class MasterNPC {
     public MasterNPC(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(ModNetwork::register);
+
+
+        // Register the NPC’s behavior
+        NpcBehaviors.REGISTER.register(modEventBus);
+        NpcAttitudes.REGISTER.register(modEventBus);
+        modEventBus.addListener(NpcRegistries::onNewRegistry);
 
 
         // Register the Deferred Register to the mod event bus so element get registered

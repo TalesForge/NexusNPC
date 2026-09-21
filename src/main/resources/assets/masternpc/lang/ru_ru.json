@@ -16,5 +16,31 @@
   "masternpc.configuration.items": "Список предметов",
   "masternpc.configuration.logDirtBlock": "Log блока грязи",
   "masternpc.configuration.magicNumberIntroduction": "Текст магического числа",
-  "masternpc.configuration.magicNumber": "Магическое число"
+  "masternpc.configuration.magicNumber": "Магическое число",
+
+
+
+  "npc_attitude.masternpc.friendly": "Дружелюбный",
+  "npc_attitude.masternpc.neutral": "Нейтральный",
+  "npc_attitude.masternpc.hostile": "Враждебный",
+
+  "npc_behavior.masternpc.stay": "Стоять",
+  "npc_behavior.masternpc.wander": "Бродить",
+  "npc_behavior.masternpc.avoid_players": "Следовать за игроком",
+
+
+
+  "gui.masternpc.editor.title": "Настройки NPC",
+  "gui.masternpc.creator.title": "Создать NPC",
+  "gui.masternpc.type": "Тип",
+  "gui.masternpc.name": "Имя",
+  "gui.masternpc.attitude": "Атрибут",
+  "gui.masternpc.behavior": "Поведение",
+  "gui.masternpc.skin": "Скин",
+  "gui.masternpc.health": "Здоровье",
+  "gui.masternpc.damage": "Урон",
+  "gui.masternpc.speed": "Скорость",
+  "message.masternpc.npc_busy": "Этого NPC уже настраивает другой игрок",
+  "gui.masternpc.save": "Сохранить",
+  "gui.masternpc.create": "Создать"
 }
