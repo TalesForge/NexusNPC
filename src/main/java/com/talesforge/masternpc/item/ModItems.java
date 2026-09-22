@@ -1,7 +1,6 @@
 package com.talesforge.masternpc.item;
 
 import com.talesforge.masternpc.MasterNPC;
-import com.talesforge.masternpc.block.ModBlocks;
 import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.item.custom.StaffControlItem;
 import net.minecraft.world.food.FoodProperties;
@@ -25,7 +24,6 @@ public class ModItems {
         ITEMS.register(eventBus);
     }
 
-    // Registry: category -> list of DeferredItems
     private static final Map<ItemCategory, List<DeferredItem<? extends Item>>> CATEGORIZED = new EnumMap<>(ItemCategory.class);
     static {
         for (ItemCategory cat : ItemCategory.values()) {
@@ -33,14 +31,12 @@ public class ModItems {
         }
     }
 
-    // ===== Public access to categories =====
+
     public static List<DeferredItem<? extends Item>> getByCategory(ItemCategory category) {
         return Collections.unmodifiableList(CATEGORIZED.get(category));
     }
 
 
-    // ===== Helpers for register =====
-    // Items
     static <T extends Item> DeferredItem<T> regItem(String name, ItemCategory category,
                                                          Function<Item.Properties, T> factory,
                                                          Item.Properties properties) {
@@ -61,20 +57,7 @@ public class ModItems {
     }
 
 
-
-
     // ===== ITEMS =====
-    public static final DeferredItem<Item> EXAMPLE_ITEM = regItem("example_item",
-            ItemCategory.MISC,
-            new Item.Properties()
-                    .food(new FoodProperties.Builder()
-                            .alwaysEdible()
-                            .nutrition(1)
-                            .saturationModifier(2f)
-                            .build()
-                    )
-    );
-
     public static final DeferredItem<Item> STAFF_CONTROL = regItem("staff_control",
             ItemCategory.TOOLS,
             StaffControlItem::new,
@@ -82,21 +65,10 @@ public class ModItems {
                     .stacksTo(1)
     );
 
-
     public static final DeferredItem<Item> NPC_SPAWN_EGG = regItem("npc_spawn_egg",
             ItemCategory.MISC,
             () -> new DeferredSpawnEggItem(ModEntities.NPC, 0x31afaf, 0xffac00,
                     new Item.Properties())
-    );
-
-
-
-    // ===== BLOCKS ITEMS =====
-    public static final DeferredItem<BlockItem> EXAMPLE_BLOCK_ITEM = regItem("example_block",
-            ItemCategory.BLOCKS,
-            ModBlocks.EXAMPLE_BLOCK,
-            new Item.Properties()
-                    .stacksTo(64)
     );
 
 }

@@ -1,7 +1,9 @@
 package com.talesforge.masternpc.client.gui;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
+import com.talesforge.masternpc.client.gui.element.ValueSlider;
 import com.talesforge.masternpc.entity.ModEntities;
+import com.talesforge.masternpc.network.payload.DeleteNpcPayload;
 import com.talesforge.masternpc.network.payload.EditorStatusPayload;
 import com.talesforge.masternpc.npc.NpcRegistries;
 import com.talesforge.masternpc.npc.NpcSettings;
@@ -30,6 +32,7 @@ public class NpcEditorScreen extends Screen {
 
     private final int entityId;  // -1 if this is a creation window (no locking is needed)
     private int pingTimer = 0;
+    private boolean isDeleted = false;
 
     // Current values in the form
     private String name;
@@ -91,7 +94,7 @@ public class NpcEditorScreen extends Screen {
 
         // Attitude button
         addRenderableWidget(CycleButton.<ResourceLocation>builder(
-                        id -> Component.translatable(Util.makeDescriptionId("npc_attitude", id)))
+                id -> Component.translatable(Util.makeDescriptionId("npc_attitude", id)))
                 .withValues(attitudes)
                 .withInitialValue(attitude)
                 .create(x, y + step, w, 20, Component.translatable("gui.masternpc.attitude"),
@@ -99,7 +102,7 @@ public class NpcEditorScreen extends Screen {
 
         // Behavior button
         addRenderableWidget(CycleButton.<ResourceLocation>builder(
-                        id -> Component.translatable(Util.makeDescriptionId("npc_behavior", id)))
+                id -> Component.translatable(Util.makeDescriptionId("npc_behavior", id)))
                 .withValues(behaviors)
                 .withInitialValue(behavior)
                 .create(x, y + step * 2, w, 20, Component.translatable("gui.masternpc.behavior"),
@@ -113,21 +116,34 @@ public class NpcEditorScreen extends Screen {
                         (btn, value) -> this.skin = value));
 
         // Attributes slider
-        addRenderableWidget(new NpcValueSlider(x, y + step * 4, w, 20, Component.translatable("gui.masternpc.health"),
+        addRenderableWidget(new ValueSlider(x, y + step * 4, w, 20, Component.translatable("gui.masternpc.health"),
                 1, 100, maxHealth, v -> this.maxHealth = v));
-        addRenderableWidget(new NpcValueSlider(x, y + step * 5, w, 20, Component.translatable("gui.masternpc.damage"),
+        addRenderableWidget(new ValueSlider(x, y + step * 5, w, 20, Component.translatable("gui.masternpc.damage"),
                 0, 20, damage, v -> this.damage = v));
-        addRenderableWidget(new NpcValueSlider(x, y + step * 6, w, 20, Component.translatable("gui.masternpc.speed"),
+        addRenderableWidget(new ValueSlider(x, y + step * 6, w, 20, Component.translatable("gui.masternpc.speed"),
                 0.05, 0.6, speed, 0.05, v -> this.speed = v));
 
+        // Create/Save button
         Component confirmText = Component.translatable(creating ? "gui.masternpc.create" : "gui.masternpc.save");
         addRenderableWidget(Button.builder(confirmText, b -> {
             onConfirm.accept(typeId, new NpcSettings(name, attitude, behavior, skin, maxHealth, damage, speed));
             onClose();
-        }).bounds(x, y + step * 7 + 6, w / 2 - 2, 20).build());
+        }).bounds(x, y + step * 7 + 6, creating ? w : w / 2 - 2, 20).build());
 
+        if (!creating) {
+            // Delete button
+            addRenderableWidget(Button.builder(Component.translatable("gui.masternpc.delete"), b -> {
+                if (entityId >= 0) {
+                    PacketDistributor.sendToServer(new DeleteNpcPayload(entityId));
+                    isDeleted = true;
+                }
+                onClose();
+            }).bounds(x + w / 2 + 2, y + step * 7 + 6, w / 2 - 2, 20).build());
+        }
+
+        // Cancel button
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(x + w / 2 + 2, y + step * 7 + 6, w / 2 - 2, 20).build());
+                .bounds(x, y + step * 8 + 6, w, 20).build());
     }
 
     @Override
@@ -149,7 +165,7 @@ public class NpcEditorScreen extends Screen {
     @Override
     public void removed() {
         super.removed();
-        if (entityId >= 0) sendStatus(true);
+        if (entityId >= 0 && !isDeleted) sendStatus(true);
     }
 
     private void sendStatus(boolean closed) {

@@ -26,7 +26,7 @@ public class StaffControlItem extends Item {
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
         if (!level.isClientSide() && context.getPlayer() instanceof ServerPlayer player) {
-            // Спавним не внутри блока, а на той стороне, по которой кликнули
+            // Spawn not inside the block, but on the side where the click occurred.
             BlockPos spawnPos = context.getClickedPos().relative(context.getClickedFace());
             PacketDistributor.sendToPlayer(player, new OpenCreatorPayload(spawnPos));
         }

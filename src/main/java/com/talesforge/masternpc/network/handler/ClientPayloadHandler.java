@@ -16,13 +16,15 @@ public class ClientPayloadHandler {
         Minecraft.getInstance().setScreen(new NpcEditorScreen(
                 Component.translatable("gui.masternpc.editor.title"),
                 payload.settings(), false, payload.entityId(),
-                (type, s) -> PacketDistributor.sendToServer(new SaveNpcPayload(payload.entityId(), s))));
+                (type, s) -> PacketDistributor.sendToServer(new SaveNpcPayload(payload.entityId(), s))
+        ));
     }
 
     public static void openCreator(OpenCreatorPayload payload, IPayloadContext context) {
         Minecraft.getInstance().setScreen(new NpcEditorScreen(
                 Component.translatable("gui.masternpc.creator.title"),
                 NpcSettings.DEFAULT, true, -1,
-                (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))));
+                (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))
+        ));
     }
 }

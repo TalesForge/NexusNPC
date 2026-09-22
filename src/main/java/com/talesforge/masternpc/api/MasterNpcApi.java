@@ -65,7 +65,7 @@ public final class MasterNpcApi {
         if (npc == null) return null;
 
         npc.moveTo(pos.x, pos.y, pos.z, yRot, 0.0F);
-        npc.applySettings(settings);
+        npc.applySettings(settings, true);
         level.addFreshEntity(npc);
         return npc;
     }

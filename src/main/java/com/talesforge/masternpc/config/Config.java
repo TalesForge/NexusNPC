@@ -1,14 +1,10 @@
 package com.talesforge.masternpc.config;
 
-import java.util.List;
-
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
-
 
     // ===== NPC =====
     public static final ModConfigSpec.DoubleValue MAX_HEALTH_LIMIT = BUILDER
@@ -16,36 +12,22 @@ public class Config {
             .defineInRange("maxHealthLimit", 100.0, 1.0, 1024.0);
 
     public static final ModConfigSpec.DoubleValue MAX_DAMAGE_LIMIT = BUILDER
+            .comment("The maximum allowable attack damage of an NPC")
             .defineInRange("maxDamageLimit", 20.0, 0.0, 1024.0);
 
     public static final ModConfigSpec.BooleanValue ALLOW_HOSTILE = BUILDER
-            .comment("Allow hostile NPCs")
+            .comment("Allow hostile NPCs to be created")
             .define("allowHostileNpc", true);
 
+    public static final ModConfigSpec.IntValue MAX_NPCS_PER_LEVEL = BUILDER
+            .comment("Maximum number of NPCs allowed in a single dimension at once. 0 = unlimited")
+            .defineInRange("maxNpcsPerLevel", 200, 0, Integer.MAX_VALUE);
 
-    // ===== Other =====
-    public static final ModConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER
-            .comment("Whether to log the dirt block on common setup")
-            .define("logDirtBlock", true);
-
-    public static final ModConfigSpec.IntValue MAGIC_NUMBER = BUILDER
-            .comment("A magic number")
-            .defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
-
-    public static final ModConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER
-            .comment("What you want the introduction message to be for the magic number")
-            .define("magicNumberIntroduction", "The magic number is... ");
-
-    // a list of strings that are treated as resource locations for items
-    public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER
-            .comment("A list of items to log on common setup.")
-            .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), () -> "", Config::validateItemName);
-
-
+    public static final ModConfigSpec.BooleanValue REQUIRE_OP_PERMISSION = BUILDER
+            .comment("Require operator permission (level 2) to create or edit NPCs with the Staff of Control")
+            .define("requireOpPermission", true);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
-    private static boolean validateItemName(final Object obj) {
-        return obj instanceof String itemName && BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(itemName));
-    }
+    private Config() {}
 }

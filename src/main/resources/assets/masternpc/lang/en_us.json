@@ -2,23 +2,9 @@
   "creativetab.masternpc.all": "MasterNPC",
 
   "item.masternpc.staff_control": "Staff of Control",
-
   "item.masternpc.npc_spawn_egg": "NPC",
 
   "entity.masternpc.npc": "NPC",
-
-  "block.masternpc.example_block": "Example Block",
-  "item.masternpc.example_item": "Example Item",
-
-  "masternpc.configuration.title": "MasterNPC Configs",
-  "masternpc.configuration.section.masternpc.common.toml": "MasterNPC Configs",
-  "masternpc.configuration.section.masternpc.common.toml.title": "MasterNPC Configs",
-  "masternpc.configuration.items": "Item List",
-  "masternpc.configuration.logDirtBlock": "Log Dirt Block",
-  "masternpc.configuration.magicNumberIntroduction": "Magic Number Text",
-  "masternpc.configuration.magicNumber": "Magic Number",
-
-
 
   "npc_attitude.masternpc.friendly": "Friendly",
   "npc_attitude.masternpc.neutral": "Neutral",
@@ -38,7 +24,17 @@
   "gui.masternpc.health": "Health",
   "gui.masternpc.damage": "Damage",
   "gui.masternpc.speed": "Speed",
-  "message.masternpc.npc_busy": "Another player is already configuring this NPC",
+  "gui.masternpc.create": "Create",
   "gui.masternpc.save": "Save",
-  "gui.masternpc.create": "Create"
+  "gui.masternpc.delete": "Delete",
+
+  "message.masternpc.npc_busy": "Another player is already configuring this NPC",
+  "message.masternpc.npc_limit_reached": "The maximum number of NPCs in this world has been reached",
+  "message.masternpc.no_permission": "You do not have the rights to edit the NPC",
+
+  "masternpc.configuration.maxHealthLimit": "Max Health Limit",
+  "masternpc.configuration.maxDamageLimit": "Max Damage Limit",
+  "masternpc.configuration.allowHostileNpc": "Allow Hostile NPC",
+  "masternpc.configuration.maxNpcsPerLevel": "Max NPCs per level",
+  "masternpc.configuration.requireOpPermission": "Require Op Permission"
 }

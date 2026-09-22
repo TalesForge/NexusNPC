@@ -15,6 +15,7 @@ public class ModNetwork {
 
         registrar.playToServer(SaveNpcPayload.TYPE, SaveNpcPayload.STREAM_CODEC, ServerPayloadHandler::saveNpc);
         registrar.playToServer(CreateNpcPayload.TYPE, CreateNpcPayload.STREAM_CODEC, ServerPayloadHandler::createNpc);
+        registrar.playToServer(DeleteNpcPayload.TYPE, DeleteNpcPayload.STREAM_CODEC, ServerPayloadHandler::deleteNpc);
         registrar.playToServer(EditorStatusPayload.TYPE, EditorStatusPayload.STREAM_CODEC, ServerPayloadHandler::editorStatus);
     }
 }

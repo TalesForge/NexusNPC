@@ -1,4 +1,4 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.element;
 
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
@@ -6,19 +6,19 @@ import net.minecraft.util.Mth;
 
 import java.util.function.DoubleConsumer;
 
-public class NpcValueSlider extends AbstractSliderButton {
+public class ValueSlider extends AbstractSliderButton {
     private final Component label;
     private final double min, max;
     private final DoubleConsumer onChange;
     private final double sliderStep;
 
-    public NpcValueSlider(int x, int y, int width, int height, Component label,
-                          double min, double max, double current, DoubleConsumer onChange) {
+    public ValueSlider(int x, int y, int width, int height, Component label,
+                       double min, double max, double current, DoubleConsumer onChange) {
         this(x, y, width, height, label, min, max, current, 1.0, onChange);
     }
 
-    public NpcValueSlider(int x, int y, int width, int height, Component label,
-                          double min, double max, double current, double sliderStep, DoubleConsumer onChange) {
+    public ValueSlider(int x, int y, int width, int height, Component label,
+                       double min, double max, double current, double sliderStep, DoubleConsumer onChange) {
         super(x, y, width, height, Component.empty(), (max == min) ? 0.0 : (current - min) / (max - min));
 
         this.label = label;

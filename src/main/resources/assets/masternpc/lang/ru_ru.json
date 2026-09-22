@@ -2,23 +2,9 @@
   "creativetab.masternpc.all": "MasterNPC",
 
   "item.masternpc.staff_control": "Жезл контроля",
-
   "item.masternpc.npc_spawn_egg": "NPC",
 
   "entity.masternpc.npc": "NPC",
-
-  "block.masternpc.example_block": "Блок-пример",
-  "item.masternpc.example_item": "Предмет-пример",
-
-  "masternpc.configuration.title": "Настройки MasterNPC",
-  "masternpc.configuration.section.masternpc.common.toml": "Настройки MasterNPC",
-  "masternpc.configuration.section.masternpc.common.toml.title": "Настройка MasterNPC",
-  "masternpc.configuration.items": "Список предметов",
-  "masternpc.configuration.logDirtBlock": "Log блока грязи",
-  "masternpc.configuration.magicNumberIntroduction": "Текст магического числа",
-  "masternpc.configuration.magicNumber": "Магическое число",
-
-
 
   "npc_attitude.masternpc.friendly": "Дружелюбный",
   "npc_attitude.masternpc.neutral": "Нейтральный",
@@ -27,8 +13,6 @@
   "npc_behavior.masternpc.stay": "Стоять",
   "npc_behavior.masternpc.wander": "Бродить",
   "npc_behavior.masternpc.avoid_players": "Следовать за игроком",
-
-
 
   "gui.masternpc.editor.title": "Настройки NPC",
   "gui.masternpc.creator.title": "Создать NPC",
@@ -40,7 +24,17 @@
   "gui.masternpc.health": "Здоровье",
   "gui.masternpc.damage": "Урон",
   "gui.masternpc.speed": "Скорость",
-  "message.masternpc.npc_busy": "Этого NPC уже настраивает другой игрок",
+  "gui.masternpc.create": "Создать",
   "gui.masternpc.save": "Сохранить",
-  "gui.masternpc.create": "Создать"
+  "gui.masternpc.delete": "Удалить",
+
+  "message.masternpc.npc_busy": "Этого NPC уже настраивает другой игрок",
+  "message.masternpc.npc_limit_reached": "Достигнут лимит количества NPC в этом мире",
+  "message.masternpc.no_permission": "У вас нет прав на редактирование NPC",
+
+  "masternpc.configuration.maxHealthLimit": "Максимальный лимит здоровья",
+  "masternpc.configuration.maxDamageLimit": "Максимальный лимит урона",
+  "masternpc.configuration.allowHostileNpc": "Разрешить враждебных NPC",
+  "masternpc.configuration.maxNpcsPerLevel": "Максимальное количество NPC в мире",
+  "masternpc.configuration.requireOpPermission": "Требовать разрешение на операцию"
 }

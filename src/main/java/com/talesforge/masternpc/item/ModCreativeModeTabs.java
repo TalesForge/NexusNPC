@@ -23,10 +23,6 @@ public class ModCreativeModeTabs {
             .icon(() -> ModItems.STAFF_CONTROL.get().getDefaultInstance())
             .withTabsBefore(CreativeModeTabs.COMBAT)
             .displayItems((parameters, output) -> {
-                // Example
-                output.accept(ModItems.EXAMPLE_ITEM.get());
-                output.accept(ModItems.EXAMPLE_BLOCK_ITEM.get());
-
                 // TOOLS
                 output.accept(ModItems.STAFF_CONTROL.get());
 

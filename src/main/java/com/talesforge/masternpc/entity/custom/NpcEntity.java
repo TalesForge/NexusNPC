@@ -21,14 +21,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.NeoForge;
@@ -44,10 +43,7 @@ public class NpcEntity extends PathfinderMob {
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
 
-    private static final ResourceLocation DEFAULT_SKIN =
-//            ResourceLocation.fromNamespaceAndPath(MasterNPC.MOD_ID, "textures/entity/npc/default.png");
-            ResourceLocation.parse(NpcSkins.DEFAULT);
-
+    private static final ResourceLocation DEFAULT_SKIN = ResourceLocation.parse(NpcSkins.DEFAULT);
 
     public final AnimationState idleAnimationState = new AnimationState();
     private int idleAnimationTimeout = 0;
@@ -56,11 +52,7 @@ public class NpcEntity extends PathfinderMob {
         super(entityType, level);
     }
 
-
-
-
-
-    // ========== Synchronizable data ==========
+    // ========== Synchronized data ==========
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
@@ -85,18 +77,27 @@ public class NpcEntity extends PathfinderMob {
     }
 
 
-    // ========== Setters (to be called on the server) ==========
-    public void setAttitude(ResourceLocation id) {
+    // ========== Internal Setters: change the data, but DO NOT re‑create the AI ==========
+    private void setAttitudeData(ResourceLocation id) {
         if (!NpcRegistries.ATTITUDES.containsKey(id) || !NpcRegistries.attitude(id).isEnabled()) {
-            id = NpcAttitudes.DEFAULT_ID;   // неизвестный или запрещённый конфигом
+            id = NpcAttitudes.DEFAULT_ID;
         }
         entityData.set(DATA_ATTITUDE, id.toString());
+    }
+
+    public void setBehaviorData(ResourceLocation id) {
+        if (!NpcRegistries.BEHAVIORS.containsKey(id)) id = NpcBehaviors.DEFAULT_ID;
+        entityData.set(DATA_BEHAVIOR, id.toString());
+    }
+
+    // ========== Public Setters (to be called on the server): change the data and rebuild the AI ==========
+    public void setAttitude(ResourceLocation id) {
+        setAttitudeData(id);
         refreshAi();
     }
 
     public void setBehavior(ResourceLocation id) {
-        if (!NpcRegistries.BEHAVIORS.containsKey(id)) id = NpcBehaviors.DEFAULT_ID;
-        entityData.set(DATA_BEHAVIOR, id.toString());
+        setBehaviorData(id);
         refreshAi();
     }
 
@@ -104,11 +105,21 @@ public class NpcEntity extends PathfinderMob {
         entityData.set(DATA_SKIN, texture.toString());
     }
 
-    public void applyStats(double maxHealth, double damage, double speed) {
+    /**
+     * @param heal true — heal to the (new) maximum, for example when creating.
+     *             false — health is only reduced if the maximum has decreased,
+     *             but never increases (for editing an existing NPC).
+     */
+    public void applyStats(double maxHealth, double damage, double speed, boolean heal) {
         setBase(Attributes.MAX_HEALTH, Mth.clamp(maxHealth, 1.0, Config.MAX_HEALTH_LIMIT.get()));
         setBase(Attributes.ATTACK_DAMAGE, Mth.clamp(damage, 0.0, Config.MAX_DAMAGE_LIMIT.get()));
         setBase(Attributes.MOVEMENT_SPEED, Mth.clamp(speed, 0.05, 1.0));
-        setHealth(getMaxHealth());
+
+        if (heal) {
+            setHealth(getMaxHealth());
+        } else {
+            setHealth(Math.min(getHealth(), getMaxHealth()));
+        }
     }
 
     private void setBase(Holder<Attribute> attribute, double value) {
@@ -166,25 +177,20 @@ public class NpcEntity extends PathfinderMob {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 20D)
                 .add(Attributes.MOVEMENT_SPEED, 0.25D)
-                .add(Attributes.ATTACK_DAMAGE, 2D)   // обязательно для MeleeAttackGoal
+                .add(Attributes.ATTACK_DAMAGE, 2D)  // mandatory for MeleeAttackGoal
                 .add(Attributes.FOLLOW_RANGE, 24D);
     }
 
 
-
-    // RMB on NPC
+    // ========== Interaction ==========
+    /** RMB on NPC */
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (player.getItemInHand(hand).is(ModItems.STAFF_CONTROL)) {
-            return InteractionResult.PASS;
+            return InteractionResult.PASS;  // The staff processes itself
         }
-//        if (hand == InteractionHand.MAIN_HAND && !this.level().isClientSide()) {
-//            String name = player.getName().getString();
-//            player.sendSystemMessage(Component.literal(String.format("Hello, %s!", name)));
-//        }
-//        return InteractionResult.sidedSuccess(this.level().isClientSide());
 
-        // The event is triggered on both sides; the handler itself checks isClientSide().
+        // The event is triggered on both sides; the handler itself checks isClientSide()
         if (NeoForge.EVENT_BUS.post(new NpcInteractEvent(this, player, hand)).isCanceled()) {
             return InteractionResult.sidedSuccess(level().isClientSide());
         }
@@ -196,13 +202,18 @@ public class NpcEntity extends PathfinderMob {
         return InteractionResult.PASS;
     }
 
-    // NPC shouldn’t disappear when the player is far away
+    /** NPC shouldn’t disappear when the player is far away */
     @Override
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
         return false;
     }
 
-
+    /** While the NPC is being configured, it cannot be hit or killed */
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (isBeingEdited()) return false;
+        return super.hurt(source, amount);
+    }
 
     public NpcSettings getSettings() {
         String name = hasCustomName() ? getCustomName().getString() : "";
@@ -212,25 +223,31 @@ public class NpcEntity extends PathfinderMob {
                 getAttributeBaseValue(Attributes.MOVEMENT_SPEED));
     }
 
-    /** Apply the settings from the client (Call only on the server) */
-    public void applySettings(NpcSettings s) {
+    /**
+     * Apply the settings from the client (Call only on the server)
+     *
+     * @param heal: whether to treat the NPC to the maximum after application (true — when created).
+     */
+    public void applySettings(NpcSettings s, boolean heal) {
         String name = s.name().trim();
         if (name.length() > 32) name = name.substring(0, 32);
         setCustomName(name.isEmpty() ? null : Component.literal(name));
         setCustomNameVisible(!name.isEmpty());
 
         setSkin(ResourceLocation.parse(NpcSkins.validate(s.skin())));
-        setAttitude(s.attitude());  // Inside, there’s already a configuration check and refreshAi().
-        setBehavior(s.behavior());
-        applyStats(safe(s.maxHealth(), 20.0), safe(s.damage(), 2.0), safe(s.speed(), 0.25));
+
+        // We set both values, and the AI reassembles them once
+        setAttitudeData(s.attitude());
+        setBehaviorData(s.behavior());
+        refreshAi();
+
+        applyStats(safe(s.maxHealth(), 20.0), safe(s.damage(), 2.0), safe(s.speed(), 0.25), heal);
     }
 
-    // Protection against NaN and infinity in the package
+    /** Protection against NaN and infinity in the package */
     private static double safe(double value, double fallback) {
         return Double.isFinite(value) ? value : fallback;
     }
-
-
 
     private void setupAnimationStates() {
         if(this.idleAnimationTimeout <= 0) {
@@ -252,10 +269,7 @@ public class NpcEntity extends PathfinderMob {
     }
 
 
-
-
-
-    // ========== Edit ==========
+    // ========== Editing ==========
     public static final double EDITOR_MAX_DIST_SQ = 64.0;  // 8 blocks, just like in saveNpc
     private static final int EDITOR_TIMEOUT_TICKS = 100;  // 5 seconds without a pulse
 
@@ -271,7 +285,9 @@ public class NpcEntity extends PathfinderMob {
         return editorId != null && editorId.equals(player.getUUID());
     }
 
-    /** @return false if another player is already configuring the NPC */
+    /**
+     * @return false if another player is already configuring the NPC
+     */
     public boolean tryStartEditing(ServerPlayer player) {
         if (editorId != null && !editorId.equals(player.getUUID())) return false;
         editorId = player.getUUID();
@@ -291,7 +307,7 @@ public class NpcEntity extends PathfinderMob {
         editorId = null;
     }
 
-    // If true, LivingEntity.aiStep() does not start the AI: the NPC stands still and does not attack
+    /** If true, LivingEntity.aiStep() does not start the AI: the NPC stands still and does not attack */
     @Override
     protected boolean isImmobile() {
         return super.isImmobile() || editorId != null;

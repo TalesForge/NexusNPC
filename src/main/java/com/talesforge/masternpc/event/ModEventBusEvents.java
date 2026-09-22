@@ -12,11 +12,6 @@ import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 @EventBusSubscriber(modid = MasterNPC.MOD_ID)
 public class ModEventBusEvents {
     @SubscribeEvent
-    public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(NpcModel.LAYER_LOCATION, NpcModel::createBodyLayer);
-    }
-
-    @SubscribeEvent
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         for (NpcTypeEntry entry : MasterNpcApi.types()) {
             event.put(entry.type().get(), entry.attributes().get().build());
