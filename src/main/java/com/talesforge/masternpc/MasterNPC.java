@@ -8,6 +8,7 @@ import com.talesforge.masternpc.network.ModNetwork;
 import com.talesforge.masternpc.npc.NpcRegistries;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.field.NpcSettingFields;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -31,6 +32,8 @@ public class MasterNPC {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MasterNPC(IEventBus modEventBus, ModContainer modContainer) {
+        NpcSettingFields.bootstrap(); // must run before any addon relies on the field list being populated
+
         modEventBus.addListener(ModNetwork::register);
 
         NpcBehaviors.REGISTER.register(modEventBus);

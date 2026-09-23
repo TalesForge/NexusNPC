@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 public class NpcRenderer extends MobRenderer<NpcEntity, NpcModel<NpcEntity>> {
 
     public NpcRenderer(EntityRendererProvider.Context context) {
-        super(context, new NpcModel<>(context.bakeLayer(NpcModel.LAYER_LOCATION)), 0.25f);
+        super(context, new NpcModel<>(context.bakeLayer(NpcModel.LAYER_LOCATION)), 0.5f);
     }
 
     @Override

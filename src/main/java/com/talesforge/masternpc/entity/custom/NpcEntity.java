@@ -5,14 +5,13 @@ import com.talesforge.masternpc.api.event.NpcInteractEvent;
 import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.item.ModItems;
 import com.talesforge.masternpc.npc.NpcRegistries;
-import com.talesforge.masternpc.npc.NpcSettings;
 import com.talesforge.masternpc.npc.NpcSkins;
+import com.talesforge.masternpc.npc.field.NpcDataMap;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -78,7 +77,10 @@ public class NpcEntity extends PathfinderMob {
 
 
     // ========== Internal Setters: change the data, but DO NOT re‑create the AI ==========
-    private void setAttitudeData(ResourceLocation id) {
+    // NOTE: was private; made public to match setBehaviorData below and because
+    // NpcSettingFields.ATTITUDE (a different package) needs to call it directly,
+    // exactly like an addon field would.
+    public void setAttitudeData(ResourceLocation id) {
         if (!NpcRegistries.ATTITUDES.containsKey(id) || !NpcRegistries.attitude(id).isEnabled()) {
             id = NpcAttitudes.DEFAULT_ID;
         }
@@ -105,21 +107,19 @@ public class NpcEntity extends PathfinderMob {
         entityData.set(DATA_SKIN, texture.toString());
     }
 
-    /**
-     * @param heal true — heal to the (new) maximum, for example when creating.
-     *             false — health is only reduced if the maximum has decreased,
-     *             but never increases (for editing an existing NPC).
-     */
-    public void applyStats(double maxHealth, double damage, double speed, boolean heal) {
-        setBase(Attributes.MAX_HEALTH, Mth.clamp(maxHealth, 1.0, Config.MAX_HEALTH_LIMIT.get()));
-        setBase(Attributes.ATTACK_DAMAGE, Mth.clamp(damage, 0.0, Config.MAX_DAMAGE_LIMIT.get()));
-        setBase(Attributes.MOVEMENT_SPEED, Mth.clamp(speed, 0.05, 1.0));
+    // Single-attribute setters used by NpcSettingFields.MAX_HEALTH / DAMAGE / SPEED.
+    // Health clamping relative to the (possibly changed) max health is handled once,
+    // generically, by NpcDataMap#applyAll — it doesn't belong to any single attribute.
+    public void setMaxHealthValue(double value) {
+        setBase(Attributes.MAX_HEALTH, Mth.clamp(value, 1.0, Config.MAX_HEALTH_LIMIT.get()));
+    }
 
-        if (heal) {
-            setHealth(getMaxHealth());
-        } else {
-            setHealth(Math.min(getHealth(), getMaxHealth()));
-        }
+    public void setDamageValue(double value) {
+        setBase(Attributes.ATTACK_DAMAGE, Mth.clamp(value, 0.0, Config.MAX_DAMAGE_LIMIT.get()));
+    }
+
+    public void setSpeedValue(double value) {
+        setBase(Attributes.MOVEMENT_SPEED, Mth.clamp(value, 0.05, 1.0));
     }
 
     private void setBase(Holder<Attribute> attribute, double value) {
@@ -215,43 +215,25 @@ public class NpcEntity extends PathfinderMob {
         return super.hurt(source, amount);
     }
 
-    public NpcSettings getSettings() {
-        String name = hasCustomName() ? getCustomName().getString() : "";
-        return new NpcSettings(name, getAttitudeId(), getBehaviorId(), entityData.get(DATA_SKIN),
-                getAttributeBaseValue(Attributes.MAX_HEALTH),
-                getAttributeBaseValue(Attributes.ATTACK_DAMAGE),
-                getAttributeBaseValue(Attributes.MOVEMENT_SPEED));
+    /** Snapshot of every registered NpcSettingField's current value — core AND addon fields alike. */
+    public NpcDataMap getSettings() {
+        return NpcDataMap.capture(this);
     }
 
     /**
-     * Apply the settings from the client (Call only on the server)
+     * Apply settings coming from the client (call only on the server).
+     * Iterates every registered NpcSettingField present in {@code data} — an addon field
+     * arrives here exactly like a core one, this method never needs to change for it.
      *
-     * @param heal: whether to treat the NPC to the maximum after application (true — when created).
+     * @param heal whether to heal the NPC to its (new) maximum afterwards (true when created).
      */
-    public void applySettings(NpcSettings s, boolean heal) {
-        String name = s.name().trim();
-        if (name.length() > 32) name = name.substring(0, 32);
-        setCustomName(name.isEmpty() ? null : Component.literal(name));
-        setCustomNameVisible(!name.isEmpty());
-
-        setSkin(ResourceLocation.parse(NpcSkins.validate(s.skin())));
-
-        // We set both values, and the AI reassembles them once
-        setAttitudeData(s.attitude());
-        setBehaviorData(s.behavior());
-        refreshAi();
-
-        applyStats(safe(s.maxHealth(), 20.0), safe(s.damage(), 2.0), safe(s.speed(), 0.25), heal);
-    }
-
-    /** Protection against NaN and infinity in the package */
-    private static double safe(double value, double fallback) {
-        return Double.isFinite(value) ? value : fallback;
+    public void applySettings(NpcDataMap data, boolean heal) {
+        data.applyAll(this, heal);
     }
 
     private void setupAnimationStates() {
         if(this.idleAnimationTimeout <= 0) {
-            this.idleAnimationTimeout = 20;  // Animation duration in Ticks (1 sec = 20 ticks)
+            this.idleAnimationTimeout = 40;  // Animation duration in Ticks (1 sec = 20 ticks)
             this.idleAnimationState.start(this.tickCount);
         } else {
             --this.idleAnimationTimeout;

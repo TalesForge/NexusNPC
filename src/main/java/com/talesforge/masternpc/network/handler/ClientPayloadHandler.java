@@ -1,7 +1,7 @@
 package com.talesforge.masternpc.network.handler;
 
 import com.talesforge.masternpc.client.gui.NpcEditorScreen;
-import com.talesforge.masternpc.npc.NpcSettings;
+import com.talesforge.masternpc.npc.field.NpcDataMap;
 import com.talesforge.masternpc.network.payload.CreateNpcPayload;
 import com.talesforge.masternpc.network.payload.OpenCreatorPayload;
 import com.talesforge.masternpc.network.payload.OpenEditorPayload;
@@ -23,7 +23,7 @@ public class ClientPayloadHandler {
     public static void openCreator(OpenCreatorPayload payload, IPayloadContext context) {
         Minecraft.getInstance().setScreen(new NpcEditorScreen(
                 Component.translatable("gui.masternpc.creator.title"),
-                NpcSettings.DEFAULT, true, -1,
+                NpcDataMap.defaults(), true, -1,
                 (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))
         ));
     }

@@ -1,8 +1,8 @@
 package com.talesforge.masternpc.api;
 
 import com.talesforge.masternpc.entity.custom.NpcEntity;
-import com.talesforge.masternpc.npc.NpcSettings;
 import com.talesforge.masternpc.npc.NpcSkins;
+import com.talesforge.masternpc.npc.field.NpcDataMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -57,7 +57,7 @@ public final class MasterNpcApi {
     /** Spawn an NPC by type id. Returns null if the type is not registered via the API. */
     @Nullable
     public static NpcEntity spawn(ResourceLocation typeId, ServerLevel level, Vec3 pos,
-                                  float yRot, NpcSettings settings) {
+                                  float yRot, NpcDataMap settings) {
         NpcTypeEntry entry = TYPES.stream().filter(e -> e.id().equals(typeId)).findFirst().orElse(null);
         if (entry == null) return null;
 

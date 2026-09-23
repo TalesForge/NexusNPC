@@ -6,11 +6,12 @@ import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.network.payload.DeleteNpcPayload;
 import com.talesforge.masternpc.network.payload.EditorStatusPayload;
 import com.talesforge.masternpc.npc.NpcRegistries;
-import com.talesforge.masternpc.npc.NpcSettings;
 import com.talesforge.masternpc.npc.NpcSkins;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.field.NpcDataMap;
+import com.talesforge.masternpc.npc.field.NpcSettingFields;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,8 +26,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+/**
+ * NOTE ON SCOPE: this screen still lays out its widgets by hand, exactly like before —
+ * it now just reads its starting values out of an {@link NpcDataMap} and writes them back
+ * into one on confirm, instead of a fixed NpcSettings record. Turning this into a screen
+ * built dynamically from registered fields/sections (so an addon can inject or disable a
+ * whole widget block, not just read/write a value through the shared field system) is the
+ * next step, not this one.
+ */
 public class NpcEditorScreen extends Screen {
-    private final BiConsumer<ResourceLocation, NpcSettings> onConfirm;
+    private final BiConsumer<ResourceLocation, NpcDataMap> onConfirm;
     private ResourceLocation typeId = ModEntities.NPC.getId();
     private final boolean creating;
 
@@ -41,19 +50,19 @@ public class NpcEditorScreen extends Screen {
     private String skin;
     private double maxHealth, damage, speed;
 
-    public NpcEditorScreen(Component title, NpcSettings initial, boolean creating, int entityId,
-                           BiConsumer<ResourceLocation, NpcSettings> onConfirm) {
+    public NpcEditorScreen(Component title, NpcDataMap initial, boolean creating, int entityId,
+                           BiConsumer<ResourceLocation, NpcDataMap> onConfirm) {
         super(title);
         this.creating = creating;
         this.entityId = entityId;
         this.onConfirm = onConfirm;
-        this.name = initial.name();
-        this.attitude = initial.attitude();
-        this.behavior = initial.behavior();
-        this.skin = NpcSkins.validate(initial.skin());
-        this.maxHealth = initial.maxHealth();
-        this.damage = initial.damage();
-        this.speed = initial.speed();
+        this.name = initial.get(NpcSettingFields.NAME);
+        this.attitude = initial.get(NpcSettingFields.ATTITUDE);
+        this.behavior = initial.get(NpcSettingFields.BEHAVIOR);
+        this.skin = NpcSkins.validate(initial.get(NpcSettingFields.SKIN));
+        this.maxHealth = initial.get(NpcSettingFields.MAX_HEALTH);
+        this.damage = initial.get(NpcSettingFields.DAMAGE);
+        this.speed = initial.get(NpcSettingFields.SPEED);
     }
 
     @Override
@@ -94,7 +103,7 @@ public class NpcEditorScreen extends Screen {
 
         // Attitude button
         addRenderableWidget(CycleButton.<ResourceLocation>builder(
-                id -> Component.translatable(Util.makeDescriptionId("npc_attitude", id)))
+                        id -> Component.translatable(Util.makeDescriptionId("npc_attitude", id)))
                 .withValues(attitudes)
                 .withInitialValue(attitude)
                 .create(x, y + step, w, 20, Component.translatable("gui.masternpc.attitude"),
@@ -102,7 +111,7 @@ public class NpcEditorScreen extends Screen {
 
         // Behavior button
         addRenderableWidget(CycleButton.<ResourceLocation>builder(
-                id -> Component.translatable(Util.makeDescriptionId("npc_behavior", id)))
+                        id -> Component.translatable(Util.makeDescriptionId("npc_behavior", id)))
                 .withValues(behaviors)
                 .withInitialValue(behavior)
                 .create(x, y + step * 2, w, 20, Component.translatable("gui.masternpc.behavior"),
@@ -126,7 +135,7 @@ public class NpcEditorScreen extends Screen {
         // Create/Save button
         Component confirmText = Component.translatable(creating ? "gui.masternpc.create" : "gui.masternpc.save");
         addRenderableWidget(Button.builder(confirmText, b -> {
-            onConfirm.accept(typeId, new NpcSettings(name, attitude, behavior, skin, maxHealth, damage, speed));
+            onConfirm.accept(typeId, buildDataMap());
             onClose();
         }).bounds(x, y + step * 7 + 6, creating ? w : w / 2 - 2, 20).build());
 
@@ -144,6 +153,26 @@ public class NpcEditorScreen extends Screen {
         // Cancel button
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
                 .bounds(x, y + step * 8 + 6, w, 20).build());
+    }
+
+    /**
+     * Built from NpcDataMap.empty(), NOT NpcDataMap.defaults() — this screen only has
+     * widgets for these seven fields, so it must only ever SET these seven. Starting from
+     * defaults() would include every registered field (addon ones too) at its default
+     * value, and applyAll() would then silently reset any addon field on every save. Once
+     * this screen is rebuilt from registered sections, each section will contribute only
+     * the fields it actually has a widget for, the same way this method does by hand today.
+     */
+    private NpcDataMap buildDataMap() {
+        NpcDataMap data = NpcDataMap.empty();
+        data.put(NpcSettingFields.NAME, name);
+        data.put(NpcSettingFields.ATTITUDE, attitude);
+        data.put(NpcSettingFields.BEHAVIOR, behavior);
+        data.put(NpcSettingFields.SKIN, skin);
+        data.put(NpcSettingFields.MAX_HEALTH, maxHealth);
+        data.put(NpcSettingFields.DAMAGE, damage);
+        data.put(NpcSettingFields.SPEED, speed);
+        return data;
     }
 
     @Override
