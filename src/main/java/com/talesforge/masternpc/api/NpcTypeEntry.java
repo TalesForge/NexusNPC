@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 public record NpcTypeEntry(ResourceLocation id,
                            Supplier<? extends EntityType<? extends NpcEntity>> type,
                            Supplier<AttributeSupplier.Builder> attributes,
-                           boolean defaultRenderer) {
+                           boolean defaultRenderer,
+                           boolean isPossibleCreateUsingStaff) {
 
 }

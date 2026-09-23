@@ -27,6 +27,13 @@ public final class MasterNpcApi {
             DeferredRegister<EntityType<?>> register, String name,
             EntityType.EntityFactory<T> factory, NpcTypeProperties props) {
 
+        return registerType(register, name, factory, true, props);
+    }
+    public static <T extends NpcEntity> DeferredHolder<EntityType<?>, EntityType<T>> registerType(
+            DeferredRegister<EntityType<?>> register, String name,
+            EntityType.EntityFactory<T> factory, boolean isPossibleCreateUsingStaff,
+            NpcTypeProperties props) {
+
         DeferredHolder<EntityType<?>, EntityType<T>> holder = register.register(name, () ->
                 EntityType.Builder.of(factory, props.category)
                         .sized(props.width, props.height)
@@ -35,7 +42,7 @@ public final class MasterNpcApi {
 
         TYPES.add(new NpcTypeEntry(
                 ResourceLocation.fromNamespaceAndPath(register.getNamespace(), name),
-                holder, props.attributes, props.defaultRenderer));
+                holder, props.attributes, props.defaultRenderer, isPossibleCreateUsingStaff));
         return holder;
     }
 
@@ -50,9 +57,21 @@ public final class MasterNpcApi {
 
     /** A sorted list of IDs so that the order does not depend on the loading order of the mods. */
     public static List<ResourceLocation> typeIds() {
-        return TYPES.stream().map(NpcTypeEntry::id)
-                .sorted(Comparator.comparing(ResourceLocation::toString)).toList();
+        return TYPES.stream()
+                .filter(NpcTypeEntry::isPossibleCreateUsingStaff)
+                .map(NpcTypeEntry::id)
+                .sorted(Comparator.comparing(ResourceLocation::toString))
+                .toList();
     }
+
+//    /** A sorted list of IDs that can be created using the staff. */
+//    public static List<ResourceLocation> staffCreatableTypeIds() {
+//        return TYPES.stream()
+//                .filter(NpcTypeEntry::isPossibleCreateUsingStaff)
+//                .map(NpcTypeEntry::id)
+//                .sorted(Comparator.comparing(ResourceLocation::toString))
+//                .toList();
+//    }
 
     /** Spawn an NPC by type id. Returns null if the type is not registered via the API. */
     @Nullable

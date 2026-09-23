@@ -15,6 +15,11 @@ public class NpcRenderer extends MobRenderer<NpcEntity, NpcModel<NpcEntity>> {
     }
 
     @Override
+    protected void scale(NpcEntity entity, PoseStack poseStack, float partialTick) {
+        poseStack.scale(0.94f, 0.94f, 0.94f);
+    }
+
+    @Override
     public ResourceLocation getTextureLocation(NpcEntity entity) {
         return entity.getSkinTexture();
     }

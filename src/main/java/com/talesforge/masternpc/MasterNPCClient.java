@@ -2,6 +2,7 @@ package com.talesforge.masternpc;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
 import com.talesforge.masternpc.api.NpcTypeEntry;
+import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.entity.client.NpcModel;
 import com.talesforge.masternpc.entity.client.NpcRenderer;
@@ -21,6 +22,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 @EventBusSubscriber(modid = MasterNPC.MOD_ID, value = Dist.CLIENT)
 public class MasterNPCClient {
     public MasterNPCClient(ModContainer container) {
+        NpcGuiRegistry.bootstrap();  // Must run before any addon relies on the core sections being registered
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
