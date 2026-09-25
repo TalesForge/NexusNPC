@@ -33,8 +33,10 @@ public class ModEventBusEvents {
     public static void onSize(EntityEvent.Size event) {
         if (event.getEntity() instanceof NpcEntity npc) {
             NpcModelType model = NpcRegistries.model(npc.getModelId());
-            event.setNewSize(EntityDimensions.scalable(model.width(), model.height()), false);
-            event.setNewEyeHeight(model.eyeHeight());
+            EntityDimensions dimensions = EntityDimensions
+                    .scalable(model.width(), model.height())
+                    .withEyeHeight(model.eyeHeight());
+            event.setNewSize(dimensions);
         }
     }
 }
