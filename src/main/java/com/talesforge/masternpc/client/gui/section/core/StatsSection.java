@@ -30,7 +30,7 @@ public final class StatsSection implements NpcGuiSection {
     }
 
     @Override
-    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget) {
+    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
         addWidget.accept(new ValueSlider(x, y, width, 20, Component.translatable("gui.masternpc.health"),
                 1, 100, maxHealth, v -> this.maxHealth = v));
         addWidget.accept(new ValueSlider(x, y + 24, width, 20, Component.translatable("gui.masternpc.damage"),

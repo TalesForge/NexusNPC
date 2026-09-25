@@ -32,7 +32,7 @@ public final class LogicSection implements NpcGuiSection {
     }
 
     @Override
-    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget) {
+    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
         // Lists come straight from the registries, so addon-registered attitudes/behaviors show up automatically
         List<ResourceLocation> attitudes = NpcRegistries.ids(NpcRegistries.ATTITUDES,
                 NpcAttitudes.DEFAULT_ID, NpcAttitudeType::isEnabled);

@@ -3,9 +3,9 @@ package com.talesforge.masternpc.npc.field;
 import com.mojang.serialization.Codec;
 import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
-import com.talesforge.masternpc.npc.NpcSkins;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.model.NpcModels;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -88,12 +88,31 @@ public final class NpcSettingFields {
         public boolean needsAiRefresh() { return true; }
     };
 
+    /**
+     * MUST be registered (and therefore applied by NpcDataMap#applyAll) BEFORE SKIN: an
+     * NpcEditorScreen save that changes both together needs the model already switched by
+     * the time the skin value gets validated, or a perfectly valid new (model, skin) pair
+     * would have its skin silently rejected against the OLD model instead.
+     */
+    public static final NpcSettingField<ResourceLocation> MODEL = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("model"); }
+        public Codec<ResourceLocation> codec() { return ResourceLocation.CODEC; }
+        public ResourceLocation defaultValue() { return NpcModels.DEFAULT_ID; }
+        public ResourceLocation get(NpcEntity npc) { return npc.getModelId(); }
+        public void set(NpcEntity npc, ResourceLocation value) { npc.setModelData(value); }
+    };
+
     public static final NpcSettingField<String> SKIN = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("skin"); }
         public Codec<String> codec() { return Codec.STRING; }
-        public String defaultValue() { return NpcSkins.DEFAULT; }
+        public String defaultValue() { return NpcModels.HUMANOID_DEFAULT_SKIN.toString(); }
         public String get(NpcEntity npc) { return npc.getSkinTexture().toString(); }
-        public void set(NpcEntity npc, String value) { npc.setSkin(ResourceLocation.parse(NpcSkins.validate(value))); }
+        public void set(NpcEntity npc, String value) {
+            // No pre-validation needed: setSkin stores the raw string, unparsed, and
+            // NpcEntity#getSkinTexture() re-validates against whatever model is CURRENT
+            // every time it's read — an incompatible or malformed value is never exposed.
+            npc.setSkin(value);
+        }
     };
 
     public static final NpcSettingField<Double> MAX_HEALTH = new NpcSettingField<>() {
@@ -136,6 +155,7 @@ public final class NpcSettingFields {
         register(NAME);
         register(ATTITUDE);
         register(BEHAVIOR);
+        register(MODEL);
         register(SKIN);
         register(MAX_HEALTH);
         register(DAMAGE);

@@ -31,7 +31,7 @@ import java.util.function.BiConsumer;
  */
 public class NpcEditorScreen extends Screen {
     private final BiConsumer<ResourceLocation, NpcDataMap> onConfirm;
-    private final NpcDataMap initial;
+    private NpcDataMap initial;
     private ResourceLocation typeId;
     private final boolean creating;
 
@@ -71,15 +71,14 @@ public class NpcEditorScreen extends Screen {
                         this.typeId = value;
                         // A different NPC type may have different active sections
                         // (or its own full screen override) — rebuild from scratch.
-                        this.clearWidgets();
-                        this.init();
+                        this.rebuild();
                     }));
             y += 24;
         }
 
         for (NpcGuiSectionFactory factory : NpcGuiRegistry.activeSections(typeId)) {
             NpcGuiSection section = factory.create(initial);
-            y += section.build(x, y, w, this.font, this::addRenderableWidget);
+            y += section.build(x, y, w, this.font, this::addRenderableWidget, this::rebuild);
             activeSections.add(section);
         }
 
@@ -101,6 +100,18 @@ public class NpcEditorScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
                 .bounds(x, y + 30 + 6, w, 20).build());
+    }
+
+    /**
+     * Re-lays out the whole screen — a different NPC type or a different model can mean a
+     * different set of active sections / valid values. Snapshots every currently active
+     * section's in-progress edits into {@code initial} first, so nothing the player already
+     * typed elsewhere gets discarded just because one unrelated widget changed.
+     */
+    private void rebuild() {
+        this.initial = this.initial.withOverrides(collectAll());
+        this.clearWidgets();
+        this.init();
     }
 
     /**

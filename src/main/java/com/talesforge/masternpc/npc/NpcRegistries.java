@@ -5,6 +5,8 @@ import com.talesforge.masternpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviorType;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.model.NpcModelType;
+import com.talesforge.masternpc.npc.model.NpcModels;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +26,15 @@ public final class NpcRegistries {
     public static final Registry<NpcAttitudeType> ATTITUDES = new RegistryBuilder<>(
             ResourceKey.<NpcAttitudeType>createRegistryKey(id("attitude"))).sync(true).create();
 
+    /**
+     * Physical NPC models (hitbox + eye height + default skin) — common, server-safe data
+     * only. The actual 3D geometry/animation for a model id is a SEPARATE, client-only
+     * registration (see {@code client.model.NpcModelRenderers}); a dedicated server needs
+     * this registry (e.g. for collision) but never touches that one.
+     */
+    public static final Registry<NpcModelType> MODELS = new RegistryBuilder<>(
+            ResourceKey.<NpcModelType>createRegistryKey(id("model"))).sync(true).create();
+
     private NpcRegistries() {}
 
     private static ResourceLocation id(String path) {
@@ -34,6 +45,7 @@ public final class NpcRegistries {
     public static void onNewRegistry(NewRegistryEvent event) {
         event.register(BEHAVIORS);
         event.register(ATTITUDES);
+        event.register(MODELS);
     }
 
     // ===== Safe retrieval: an unknown id returns a default value. =====
@@ -45,6 +57,11 @@ public final class NpcRegistries {
     public static NpcAttitudeType attitude(ResourceLocation id) {
         NpcAttitudeType type = ATTITUDES.get(id);
         return type != null ? type : ATTITUDES.get(NpcAttitudes.DEFAULT_ID);
+    }
+
+    public static NpcModelType model(ResourceLocation id) {
+        NpcModelType type = MODELS.get(id);
+        return type != null ? type : MODELS.get(NpcModels.DEFAULT_ID);
     }
 
     /** id for the screen: the default value is first, the rest are in alphabetical order. */

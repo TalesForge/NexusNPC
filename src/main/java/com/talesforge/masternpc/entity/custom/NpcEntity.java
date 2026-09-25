@@ -5,11 +5,12 @@ import com.talesforge.masternpc.api.event.NpcInteractEvent;
 import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.item.ModItems;
 import com.talesforge.masternpc.npc.NpcRegistries;
-import com.talesforge.masternpc.npc.NpcSkins;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.model.NpcModelSkins;
+import com.talesforge.masternpc.npc.model.NpcModels;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -39,10 +40,10 @@ public class NpcEntity extends PathfinderMob {
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_BEHAVIOR =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> DATA_MODEL =
+            SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
-
-    private static final ResourceLocation DEFAULT_SKIN = ResourceLocation.parse(NpcSkins.DEFAULT);
 
     public final AnimationState idleAnimationState = new AnimationState();
     private int idleAnimationTimeout = 0;
@@ -57,7 +58,8 @@ public class NpcEntity extends PathfinderMob {
         super.defineSynchedData(builder);
         builder.define(DATA_ATTITUDE, NpcAttitudes.DEFAULT_ID.toString());
         builder.define(DATA_BEHAVIOR, NpcBehaviors.DEFAULT_ID.toString());
-        builder.define(DATA_SKIN, DEFAULT_SKIN.toString());
+        builder.define(DATA_MODEL, NpcModels.DEFAULT_ID.toString());
+        builder.define(DATA_SKIN, NpcRegistries.model(NpcModels.DEFAULT_ID).defaultSkin().toString());
     }
 
     public ResourceLocation getAttitudeId() {
@@ -70,9 +72,15 @@ public class NpcEntity extends PathfinderMob {
         return id != null && NpcRegistries.BEHAVIORS.containsKey(id) ? id : NpcBehaviors.DEFAULT_ID;
     }
 
+    public ResourceLocation getModelId() {
+        ResourceLocation id = ResourceLocation.tryParse(entityData.get(DATA_MODEL));
+        return id != null && NpcRegistries.MODELS.containsKey(id) ? id : NpcModels.DEFAULT_ID;
+    }
+
+    /** Validated against whatever model is currently set — a skin from a different model always falls back to that model's own default. */
     public ResourceLocation getSkinTexture() {
-        ResourceLocation id = ResourceLocation.tryParse(entityData.get(DATA_SKIN));
-        return id != null ? id : DEFAULT_SKIN;
+        String validated = NpcModelSkins.validate(getModelId(), entityData.get(DATA_SKIN));
+        return ResourceLocation.parse(validated);
     }
 
 
@@ -92,6 +100,22 @@ public class NpcEntity extends PathfinderMob {
         entityData.set(DATA_BEHAVIOR, id.toString());
     }
 
+    /**
+     * Changes the model and immediately recomputes the hitbox/eye height via
+     * {@link #refreshDimensions()}, which triggers NeoForge's {@code EntityEvent.Size}
+     * (see {@code ModEventBusEvents#onSize}) — that's what actually reads the new model's
+     * {@code NpcModelType} and applies it.
+     * Does NOT touch the current skin value; if it doesn't belong to the new model,
+     * {@link #getSkinTexture()} already falls back to the new model's own default on read,
+     * so nothing needs correcting here — but see NpcSettingFields.MODEL for why it's still
+     * registered BEFORE the skin field (so a GUI save that changes both together is coherent).
+     */
+    public void setModelData(ResourceLocation id) {
+        if (!NpcRegistries.MODELS.containsKey(id)) id = NpcModels.DEFAULT_ID;
+        entityData.set(DATA_MODEL, id.toString());
+        refreshDimensions();
+    }
+
     // ========== Public Setters (to be called on the server): change the data and rebuild the AI ==========
     public void setAttitude(ResourceLocation id) {
         setAttitudeData(id);
@@ -103,9 +127,16 @@ public class NpcEntity extends PathfinderMob {
         refreshAi();
     }
 
-    public void setSkin(ResourceLocation texture) {
-        entityData.set(DATA_SKIN, texture.toString());
+    /** Stores whatever is passed in, unparsed — {@link #getSkinTexture()} is what actually validates it against the current model on read, and only IT ever needs to parse a ResourceLocation. */
+    public void setSkin(String texture) {
+        entityData.set(DATA_SKIN, texture);
     }
+
+    // Hitbox and eye height are per-model, not fixed at EntityType registration. In 1.21.1,
+    // LivingEntity.getDimensions(Pose)/getEyeHeight(Pose, EntityDimensions) are FINAL — NeoForge
+    // computes them itself and fires EntityEvent.Size so mods can override the result, instead
+    // of a protected method being the override point. See ModEventBusEvents#onSize for the
+    // actual logic; this class only needs to trigger a recompute when the model changes.
 
     // Single-attribute setters used by NpcSettingFields.MAX_HEALTH / DAMAGE / SPEED.
     // Health clamping relative to the (possibly changed) max health is handled once,
@@ -161,6 +192,7 @@ public class NpcEntity extends PathfinderMob {
         super.addAdditionalSaveData(tag);
         tag.putString("Attitude", getAttitudeId().toString());
         tag.putString("Behavior", getBehaviorId().toString());
+        tag.putString("Model", getModelId().toString());
         tag.putString("Skin", entityData.get(DATA_SKIN));
     }
 
@@ -169,7 +201,9 @@ public class NpcEntity extends PathfinderMob {
         super.readAdditionalSaveData(tag);
         if (tag.contains("Attitude")) entityData.set(DATA_ATTITUDE, tag.getString("Attitude"));
         if (tag.contains("Behavior")) entityData.set(DATA_BEHAVIOR, tag.getString("Behavior"));
+        if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
         if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
+        refreshDimensions();
         refreshAi();
     }
 

@@ -82,6 +82,20 @@ public final class NpcDataMap {
     }
 
     /**
+     * A new map: this map's values, with every value from {@code overrides} replacing the
+     * matching key. Used by the GUI to carry in-progress edits through a section rebuild
+     * (e.g. switching the model, which changes which skins are valid and so needs the
+     * appearance section to re-lay itself out) instead of discarding everything else the
+     * player had already typed.
+     */
+    public NpcDataMap withOverrides(NpcDataMap overrides) {
+        NpcDataMap result = new NpcDataMap();
+        result.values.putAll(this.values);
+        result.values.putAll(overrides.values);
+        return result;
+    }
+
+    /**
      * Apply every value present in this map back onto a live NPC — the new
      * {@code NpcEntity#applySettings(...)}. Server-side only.
      *

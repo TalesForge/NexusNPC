@@ -1,8 +1,8 @@
 package com.talesforge.masternpc.api;
 
 import com.talesforge.masternpc.entity.custom.NpcEntity;
-import com.talesforge.masternpc.npc.NpcSkins;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
+import com.talesforge.masternpc.npc.model.NpcModelSkins;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -46,9 +46,13 @@ public final class MasterNpcApi {
         return holder;
     }
 
-    /** Add the skin to the selection list. Call in the constructor of the mod, both on the client and on the server. */
-    public static void registerSkin(ResourceLocation texture) {
-        NpcSkins.add(texture);
+    /**
+     * Add a texture to the selection list for one specific model — a skin only makes sense
+     * for the model it was painted for (different UV layout/texture size). Call in the
+     * mod's constructor, both on the client and on the server.
+     */
+    public static void registerSkin(ResourceLocation modelId, ResourceLocation texture) {
+        NpcModelSkins.add(modelId, texture);
     }
 
     public static List<NpcTypeEntry> types() {

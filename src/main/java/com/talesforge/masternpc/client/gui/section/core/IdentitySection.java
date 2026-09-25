@@ -24,7 +24,7 @@ public final class IdentitySection implements NpcGuiSection {
     }
 
     @Override
-    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget) {
+    public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
         EditBox box = new EditBox(font, x, y, width, 20, Component.translatable("gui.masternpc.name"));
         box.setMaxLength(32);
         box.setHint(Component.translatable("gui.masternpc.name"));
