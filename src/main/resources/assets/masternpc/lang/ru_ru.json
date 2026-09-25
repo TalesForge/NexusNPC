@@ -14,12 +14,15 @@
   "npc_behavior.masternpc.wander": "Бродить",
   "npc_behavior.masternpc.avoid_players": "Следовать за игроком",
 
+  "npc_model.masternpc.humanoid": "Гуманоид",
+
   "gui.masternpc.editor.title": "Настройки NPC",
   "gui.masternpc.creator.title": "Создать NPC",
   "gui.masternpc.type": "Тип",
   "gui.masternpc.name": "Имя",
   "gui.masternpc.attitude": "Атрибут",
   "gui.masternpc.behavior": "Поведение",
+  "gui.masternpc.model": "Модель",
   "gui.masternpc.skin": "Скин",
   "gui.masternpc.health": "Здоровье",
   "gui.masternpc.damage": "Урон",

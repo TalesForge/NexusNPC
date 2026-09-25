@@ -47,7 +47,7 @@ public final class AppearanceSection implements NpcGuiSection {
         skin = NpcModelSkins.validate(model, skin);
 
         addWidget.accept(CycleButton.<ResourceLocation>builder(
-                        id -> Component.translatable(Util.makeDescriptionId("npc_model", id)))
+                id -> Component.translatable(Util.makeDescriptionId("npc_model", id)))
                 .withValues(models)
                 .withInitialValue(model)
                 .create(x, y, width, 20, Component.translatable("gui.masternpc.model"), (btn, value) -> {

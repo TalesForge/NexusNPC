@@ -14,12 +14,15 @@
   "npc_behavior.masternpc.wander": "Wander",
   "npc_behavior.masternpc.avoid_players": "Avoid players",
 
+  "npc_model.masternpc.humanoid": "Humanoid",
+
   "gui.masternpc.editor.title": "NPC Settings",
   "gui.masternpc.creator.title": "Create NPC",
   "gui.masternpc.type": "Type",
   "gui.masternpc.name": "Name",
   "gui.masternpc.attitude": "Attitude",
   "gui.masternpc.behavior": "Behavior",
+  "gui.masternpc.model": "Model",
   "gui.masternpc.skin": "Skin",
   "gui.masternpc.health": "Health",
   "gui.masternpc.damage": "Damage",

@@ -2,6 +2,7 @@ package com.talesforge.masternpc;
 
 import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.entity.ModEntities;
+import com.talesforge.masternpc.event.ModEventBusEvents;
 import com.talesforge.masternpc.item.ModItems;
 import com.talesforge.masternpc.item.ModCreativeModeTabs;
 import com.talesforge.masternpc.network.ModNetwork;
@@ -9,6 +10,7 @@ import com.talesforge.masternpc.npc.NpcRegistries;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
 import com.talesforge.masternpc.npc.field.NpcSettingFields;
+import com.talesforge.masternpc.npc.model.NpcModels;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -32,12 +34,13 @@ public class MasterNPC {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MasterNPC(IEventBus modEventBus, ModContainer modContainer) {
-        NpcSettingFields.bootstrap(); // must run before any addon relies on the field list being populated
+        NpcSettingFields.bootstrap();  // Must run before any addon relies on the field list being populated
 
         modEventBus.addListener(ModNetwork::register);
 
         NpcBehaviors.REGISTER.register(modEventBus);
         NpcAttitudes.REGISTER.register(modEventBus);
+        NpcModels.REGISTER.register(modEventBus);
         modEventBus.addListener(NpcRegistries::onNewRegistry);
 
         ModItems.register(modEventBus);
@@ -45,6 +48,7 @@ public class MasterNPC {
         ModCreativeModeTabs.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.addListener(ModEventBusEvents::onSize);
 
         modEventBus.addListener(this::addCreative);
 
