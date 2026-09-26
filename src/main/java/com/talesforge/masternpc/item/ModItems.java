@@ -24,49 +24,33 @@ public class ModItems {
         ITEMS.register(eventBus);
     }
 
-    private static final Map<ItemCategory, List<DeferredItem<? extends Item>>> CATEGORIZED = new EnumMap<>(ItemCategory.class);
-    static {
-        for (ItemCategory cat : ItemCategory.values()) {
-            CATEGORIZED.put(cat, new ArrayList<>());
-        }
-    }
 
-
-    public static List<DeferredItem<? extends Item>> getByCategory(ItemCategory category) {
-        return Collections.unmodifiableList(CATEGORIZED.get(category));
-    }
-
-
-    static <T extends Item> DeferredItem<T> regItem(String name, ItemCategory category,
+    static <T extends Item> DeferredItem<T> regItem(String name,
                                                          Function<Item.Properties, T> factory,
                                                          Item.Properties properties) {
         DeferredItem<T> item = ITEMS.registerItem(name, factory, properties);
-        CATEGORIZED.get(category).add(item);
         return item;
     }
-    static <T extends Item> DeferredItem<T> regItem(String name, ItemCategory category, Supplier<T> supplier) {
+    static <T extends Item> DeferredItem<T> regItem(String name, Supplier<T> supplier) {
         DeferredItem<T> item = ITEMS.register(name, supplier);
-        CATEGORIZED.get(category).add(item);
         return item;
     }
-    static DeferredItem<Item> regItem(String name, ItemCategory category, Item.Properties properties) {
-        return regItem(name, category, () -> new Item(properties));
+    static DeferredItem<Item> regItem(String name, Item.Properties properties) {
+        return regItem(name, () -> new Item(properties));
     }
-    static DeferredItem<BlockItem> regItem(String name, ItemCategory category, DeferredBlock<Block> block, Item.Properties properties) {
-        return regItem(name, category, () -> new BlockItem(block.get(), properties));
+    static DeferredItem<BlockItem> regItem(String name, DeferredBlock<Block> block, Item.Properties properties) {
+        return regItem(name, () -> new BlockItem(block.get(), properties));
     }
 
 
     // ===== ITEMS =====
     public static final DeferredItem<Item> STAFF_CONTROL = regItem("staff_control",
-            ItemCategory.TOOLS,
             StaffControlItem::new,
             new Item.Properties()
                     .stacksTo(1)
     );
 
     public static final DeferredItem<Item> NPC_SPAWN_EGG = regItem("npc_spawn_egg",
-            ItemCategory.MISC,
             () -> new DeferredSpawnEggItem(ModEntities.NPC, 0x31afaf, 0xffac00,
                     new Item.Properties())
     );

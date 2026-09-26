@@ -1,9 +1,10 @@
 package com.talesforge.masternpc.api;
 
-import com.google.common.base.Supplier;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+
+import java.util.function.Supplier;
 
 public final class NpcTypeProperties {
     // Fields without `private`: they are read by `MasterNpcApi` from the same package.

@@ -30,10 +30,8 @@ public class NpcRenderer extends MobRenderer<NpcEntity, EntityModel<NpcEntity>> 
 
     public NpcRenderer(EntityRendererProvider.Context context) {
         super(context, bake(context, requireDefault()), 0.5f);
-        this.models = bakeAll(context);
-        // super() already baked the default (humanoid) model into this.model — reuse it
-        // as the fallback rather than baking the same layer a second time.
         this.fallback = this.model;
+        this.models = bakeAll(context, this.fallback);
     }
 
     private static NpcModelRenderers.Factory requireDefault() {
@@ -47,10 +45,15 @@ public class NpcRenderer extends MobRenderer<NpcEntity, EntityModel<NpcEntity>> 
         return factory;
     }
 
-    private static Map<ResourceLocation, EntityModel<NpcEntity>> bakeAll(EntityRendererProvider.Context context) {
+    private static Map<ResourceLocation, EntityModel<NpcEntity>> bakeAll(EntityRendererProvider.Context context,
+                                                                         EntityModel<NpcEntity> defaultModel) {
         Map<ResourceLocation, EntityModel<NpcEntity>> map = new HashMap<>();
         for (Map.Entry<ResourceLocation, NpcModelRenderers.Factory> entry : NpcModelRenderers.all().entrySet()) {
-            map.put(entry.getKey(), bake(context, entry.getValue()));
+            if (entry.getKey().equals(NpcModels.DEFAULT_ID)) {
+                map.put(entry.getKey(), defaultModel);  // We reuse the already created default model.
+            } else {
+                map.put(entry.getKey(), bake(context, entry.getValue()));
+            }
         }
         return map;
     }

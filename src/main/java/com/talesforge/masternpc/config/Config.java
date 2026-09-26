@@ -1,6 +1,5 @@
 package com.talesforge.masternpc.config;
 
-import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Config {

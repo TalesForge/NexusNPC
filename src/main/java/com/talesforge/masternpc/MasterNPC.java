@@ -48,7 +48,6 @@ public class MasterNPC {
         ModCreativeModeTabs.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
-        NeoForge.EVENT_BUS.addListener(ModEventBusEvents::onSize);
 
         modEventBus.addListener(this::addCreative);
 

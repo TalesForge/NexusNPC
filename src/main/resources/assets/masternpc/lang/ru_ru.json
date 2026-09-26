@@ -12,7 +12,7 @@
 
   "npc_behavior.masternpc.stay": "Стоять",
   "npc_behavior.masternpc.wander": "Бродить",
-  "npc_behavior.masternpc.avoid_players": "Следовать за игроком",
+  "npc_behavior.masternpc.avoid_players": "Избегать игроков",
 
   "npc_model.masternpc.humanoid": "Гуманоид",
 

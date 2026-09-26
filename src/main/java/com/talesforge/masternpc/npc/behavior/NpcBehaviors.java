@@ -15,7 +15,7 @@ public final class NpcBehaviors {
     public static final ResourceLocation DEFAULT_ID = WANDER_ID;
 
     static {
-        REGISTER.register("stay", () -> (npc, goals) -> {});   // пустая реализация
+        REGISTER.register("stay", () -> (npc, goals) -> {});
         REGISTER.register("wander", () -> new WanderBehavior(0.8));
         REGISTER.register("avoid_players", AvoidPlayersBehavior::new);
     }
