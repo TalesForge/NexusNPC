@@ -31,13 +31,15 @@ import java.util.function.BiConsumer;
  * see {@code ClientPayloadHandler}, which checks for that override before constructing this.
  */
 public class NpcEditorScreen extends Screen {
+    private boolean childOpen = false;
+
     private final BiConsumer<ResourceLocation, NpcDataMap> onConfirm;
     private NpcDataMap initial;
     private ResourceLocation typeId;
     private final boolean creating;
 
     private final int entityId;  // -1 if this is a creation window (no locking is needed)
-    private int pingTimer = 0;
+//    private int pingTimer = 0;
     private boolean isDeleted = false;
 
     private final List<NpcGuiSection> activeSections = new ArrayList<>();
@@ -55,6 +57,14 @@ public class NpcEditorScreen extends Screen {
 
     @Override
     protected void init() {
+        childOpen = false;
+        if (entityId >= 0) EditorKeepAlive.start(entityId);
+
+        // init() runs again when a child screen hands control back, or the window is resized.
+        // The sections holding the edits are still alive here: snapshot them BEFORE clearing.
+        if (!activeSections.isEmpty()) {
+            this.initial = this.initial.withOverrides(collectAll());
+        }
         activeSections.clear();
 
         int w = 200;
@@ -64,8 +74,7 @@ public class NpcEditorScreen extends Screen {
 
         List<ResourceLocation> types = MasterNpcApi.typeIds();
         if (creating && types.size() > 1) {
-            addRenderableWidget(CycleButton.<ResourceLocation>builder(id ->
-                            Component.translatable(Util.makeDescriptionId("entity", id)))
+            addRenderableWidget(CycleButton.<ResourceLocation>builder(id -> Component.translatable(Util.makeDescriptionId("entity", id)))
                     .withValues(types)
                     .withInitialValue(typeId)
                     .create(x, y, w, 20, Component.translatable("gui.masternpc.type"), (btn, value) -> {
@@ -104,6 +113,12 @@ public class NpcEditorScreen extends Screen {
                 .bounds(x, y + 30 + 6, w, 20).build());
     }
 
+    /** Opens a child screen (dialogues, ...) without giving up the NPC's editing lock. */
+    public void openChild(Screen child) {
+        childOpen = true;
+        Minecraft.getInstance().setScreen(child);
+    }
+
     /**
      * Re-lays out the whole screen — a different NPC type or a different model can mean a
      * different set of active sections / valid values. Snapshots every currently active
@@ -111,7 +126,6 @@ public class NpcEditorScreen extends Screen {
      * typed elsewhere gets discarded just because one unrelated widget changed.
      */
     private void rebuild() {
-        this.initial = this.initial.withOverrides(collectAll());
         this.clearWidgets();
         this.init();
     }
@@ -136,19 +150,21 @@ public class NpcEditorScreen extends Screen {
         graphics.drawCenteredString(this.font, this.title, this.width / 2, formTop - 16, 0xFFFFFF);
     }
 
-    @Override
-    public void tick() {
-        super.tick();
-        if (entityId >= 0 && ++pingTimer >= 20) {
-            pingTimer = 0;
-            sendStatus(false);
-        }
-    }
+//    @Override
+//    public void tick() {
+//        super.tick();
+//        if (entityId >= 0 && ++pingTimer >= 20) {
+//            pingTimer = 0;
+//            sendStatus(false);
+//        }
+//    }
 
     // This is triggered by ANY screen closure: buttons, Esc, replacement with another screen, or shutdown
     @Override
     public void removed() {
         super.removed();
+        if (childOpen) return;
+        EditorKeepAlive.stop();
         if (entityId >= 0 && !isDeleted) sendStatus(true);
     }
 

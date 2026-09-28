@@ -1,5 +1,7 @@
 package com.talesforge.masternpc.entity.custom;
 
+import com.mojang.serialization.Codec;
+import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.api.event.NpcGoalsEvent;
 import com.talesforge.masternpc.api.event.NpcInteractEvent;
 import com.talesforge.masternpc.config.Config;
@@ -249,9 +251,10 @@ public class NpcEntity extends PathfinderMob implements Merchant {
         tag.putString("Behavior", getBehaviorId().toString());
         tag.putString("Model", getModelId().toString());
         tag.putString("Skin", entityData.get(DATA_SKIN));
-        tag.put("Dialogue", NpcDialogue.CODEC.encodeStart(NbtOps.INSTANCE, dialogue).getOrThrow());
-        tag.put("Quests", NpcQuests.CODEC.encodeStart(NbtOps.INSTANCE, quests).getOrThrow());
-        tag.put("Trades", NpcTrades.CODEC.encodeStart(NbtOps.INSTANCE, trades).getOrThrow());
+
+        saveCodec(tag, "Dialogue", NpcDialogue.CODEC, dialogue);
+        saveCodec(tag, "Quests", NpcQuests.CODEC, quests);
+        saveCodec(tag, "Trades", NpcTrades.CODEC, trades);
     }
 
     @Override
@@ -261,11 +264,26 @@ public class NpcEntity extends PathfinderMob implements Merchant {
         if (tag.contains("Behavior")) entityData.set(DATA_BEHAVIOR, tag.getString("Behavior"));
         if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
         if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
-        // Dialogue
-        // Quests
-        // Trades
+
+        this.dialogue = loadCodec(tag, "Dialogue", NpcDialogue.CODEC, NpcDialogue.EMPTY);
+        this.quests = loadCodec(tag, "Quests", NpcQuests.CODEC, NpcQuests.EMPTY);
+        setTrades(loadCodec(tag, "Trades", NpcTrades.CODEC, NpcTrades.EMPTY));
+
         refreshDimensions();
         refreshAi();
+    }
+
+    private static <T> void saveCodec(CompoundTag tag, String key, Codec<T> codec, T value) {
+        codec.encodeStart(NbtOps.INSTANCE, value)
+                .resultOrPartial(err -> MasterNPC.LOGGER.error("Could not save NPC '{}': {}", key, err))
+                .ifPresent(encoded -> tag.put(key, encoded));
+    }
+
+    private static <T> T loadCodec(CompoundTag tag, String key, Codec<T> codec, T fallback) {
+        if (!tag.contains(key)) return fallback;
+        return codec.parse(NbtOps.INSTANCE, tag.get(key))
+                .resultOrPartial(err -> MasterNPC.LOGGER.error("Could not load NPC '{}': {}", key, err))
+                .orElse(fallback);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -294,10 +312,10 @@ public class NpcEntity extends PathfinderMob implements Merchant {
 
     /** Hook for heirs. By default, it does nothing. */
     protected InteractionResult onInteract(Player player, InteractionHand hand) {
-        if (dialogue.isEmpty()) return InteractionResult.PASS;
+        DialoguePage start = dialogue.startPage();
+        if (start == null) return InteractionResult.PASS;
         if (player instanceof ServerPlayer serverPlayer) {
-            DialoguePage start = dialogue.page(DialoguePage.START_ID);
-            if (start != null) PacketDistributor.sendToPlayer(serverPlayer, new OpenDialoguePayload(getId(), start));
+            PacketDistributor.sendToPlayer(serverPlayer, new OpenDialoguePayload(getId(), start));
         }
         return InteractionResult.sidedSuccess(level().isClientSide());
     }

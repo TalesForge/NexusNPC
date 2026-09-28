@@ -1,5 +1,6 @@
 package com.talesforge.masternpc.npc.field;
 
+import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -141,7 +142,7 @@ public final class NpcDataMap {
     private static <T> void encodeOne(CompoundTag tag, NpcSettingField<T> field, Object value) {
         if (field == null) return; // defensive: shouldn't happen for maps we built ourselves
         field.codec().encodeStart(NbtOps.INSTANCE, (T) value)
-                .resultOrPartial(err -> {})
+                .resultOrPartial(err -> MasterNPC.LOGGER.warn("Could not encode NPC field {}: {}", field.id(), err))
                 .ifPresent(encoded -> tag.put(field.id().toString(), encoded));
     }
 
@@ -158,7 +159,7 @@ public final class NpcDataMap {
 
     private static <T> void decodeOne(NpcDataMap data, NpcSettingField<T> field, Tag raw) {
         field.codec().parse(NbtOps.INSTANCE, raw)
-                .resultOrPartial(err -> {})
+                .resultOrPartial(err -> MasterNPC.LOGGER.warn("Could not decode NPC field {}: {}", field.id(), err))
                 .ifPresent(value -> data.values.put(field.id(), value));
     }
 }

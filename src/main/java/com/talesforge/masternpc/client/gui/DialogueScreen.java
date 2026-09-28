@@ -1,6 +1,7 @@
 package com.talesforge.masternpc.client.gui;
 
 import com.talesforge.masternpc.network.payload.DialogueActionPayload;
+import com.talesforge.masternpc.npc.dialogue.DialogueAction;
 import com.talesforge.masternpc.npc.dialogue.DialogueOption;
 import com.talesforge.masternpc.npc.dialogue.DialoguePage;
 import net.minecraft.client.gui.components.Button;
@@ -33,14 +34,16 @@ public class DialogueScreen extends Screen {
         List<DialogueOption> options = page.options();
         for (int i = 0; i < options.size(); i++) {
             int index = i;
-            addRenderableWidget(Button.builder(Component.literal(options.get(i).text()), b ->
-                    PacketDistributor.sendToServer(new DialogueActionPayload(entityId, page.id(), index))
-            ).bounds(x, y, w, 20).build());
+            DialogueOption option = options.get(i);
+            addRenderableWidget(Button.builder(Component.literal(option.text()), b -> {
+                PacketDistributor.sendToServer(new DialogueActionPayload(entityId, page.id(), index));
+                if (option.action() instanceof DialogueAction.Close) onClose();
+            }).bounds(x, y, w, 20).build());
             y += 24;
         }
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(x, y + 6, w, 20).build());
+//        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
+//                .bounds(x, y + 6, w, 20).build());
     }
 
     @Override public boolean isPauseScreen() { return true; }

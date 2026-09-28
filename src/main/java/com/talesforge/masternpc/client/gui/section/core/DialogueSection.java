@@ -2,6 +2,8 @@ package com.talesforge.masternpc.client.gui.section.core;
 
 import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.client.gui.DialogueEditScreen;
+import com.talesforge.masternpc.client.gui.DialogueListScreen;
+import com.talesforge.masternpc.client.gui.NpcEditorScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSection;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSectionFactory;
 import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
@@ -11,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -24,10 +27,15 @@ public final class DialogueSection implements NpcGuiSection {
 
     @Override
     public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
-        addWidget.accept(Button.builder(Component.translatable("gui.masternpc.dialogue.edit"), b -> {
-            var parent = Minecraft.getInstance().screen;
-            Minecraft.getInstance().setScreen(new DialogueEditScreen(parent, dialogue, updated -> this.dialogue = updated));
-        }).bounds(x, y, width, 20).build());
+        addWidget.accept(Button.builder(
+                        Component.translatable("gui.masternpc.dialogue.edit", dialogue.pages().size()),
+                        b -> {
+                            Screen parent = Minecraft.getInstance().screen;
+                            Screen child = new DialogueListScreen(parent, dialogue, updated -> this.dialogue = updated);
+                            if (parent instanceof NpcEditorScreen editor) editor.openChild(child);  // Keeps the lock
+                            else Minecraft.getInstance().setScreen(child);
+                        })
+                .bounds(x, y, width, 20).build());
         return 24;
     }
 

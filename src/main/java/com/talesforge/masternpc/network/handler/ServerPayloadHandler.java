@@ -45,6 +45,13 @@ public class ServerPayloadHandler {
         else npc.editorPing();
     }
 
+    /** True if this player holds the NPC's editing lock now (taking it if it was free). Otherwise tells them why not. */
+    private static boolean ensureEditor(ServerPlayer player, NpcEntity npc) {
+        if (npc.isEditedBy(player) || npc.tryStartEditing(player)) return true;
+        player.sendSystemMessage(Component.translatable("message.masternpc.npc_busy"));
+        return false;
+    }
+
     public static void saveNpc(SaveNpcPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
         if (!canManageNpcs(player)) {
@@ -53,10 +60,12 @@ public class ServerPayloadHandler {
         }
 
         Entity entity = player.level().getEntity(payload.entityId());
-        if (entity == null) return;
         if (!(entity instanceof NpcEntity npc)) return;
-        if (!npc.isEditedBy(player)) return;
-        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) return;
+        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) {
+            player.sendSystemMessage(Component.translatable("message.masternpc.too_far"));
+            return;
+        }
+        if (!ensureEditor(player, npc)) return;
 
         npc.applySettings(payload.settings(), false);
     }
@@ -90,10 +99,12 @@ public class ServerPayloadHandler {
         }
 
         Entity entity = player.level().getEntity(payload.entityId());
-        if (entity == null) return;
         if (!(entity instanceof NpcEntity npc)) return;
-        if (!npc.isEditedBy(player)) return;
-        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) return;
+        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) {
+            player.sendSystemMessage(Component.translatable("message.masternpc.too_far"));
+            return;
+        }
+        if (!ensureEditor(player, npc)) return;
 
         npc.discard();
     }
@@ -113,8 +124,12 @@ public class ServerPayloadHandler {
 
         switch (page.options().get(payload.optionIndex()).action()) {
             case DialogueAction.Goto g -> sendPage(player, npc, g.pageId());
-            case DialogueAction.OpenTrade t -> player.openMenu(new SimpleMenuProvider(
-                    (id, inv, p) -> new MerchantMenu(id, inv, npc), npc.getDisplayName()));
+            case DialogueAction.OpenTrade t -> {
+                if (npc.getTradingPlayer() != null && npc.getTradingPlayer() != player) return;  // Busy with someone else
+                npc.setTradingPlayer(player);
+                npc.openTradingScreen(player, npc.getDisplayName(), 1);  // Opens the menu AND sends the offers to the client
+                if (!(player.containerMenu instanceof MerchantMenu)) npc.setTradingPlayer(null);  // Failed to open
+            }
             case DialogueAction.AcceptQuest a -> {
                 NpcQuest quest = npc.getQuests().get(a.questId());
                 if (quest != null) {
@@ -143,7 +158,7 @@ public class ServerPayloadHandler {
     }
 
     private static void sendPage(ServerPlayer player, NpcEntity npc, String pageId) {
-        DialoguePage page = npc.getDialogue().page(pageId);
+        DialoguePage page = pageId.isBlank() ? npc.getDialogue().startPage() : npc.getDialogue().page(pageId);
         if (page != null) PacketDistributor.sendToPlayer(player, new OpenDialoguePayload(npc.getId(), page));
     }
 

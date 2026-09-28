@@ -5,12 +5,16 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
+
 /**
  * Что происходит при клике по варианту ответа. Ничего не знает про NpcEntity и сеть —
  * это делает ServerPayloadHandler#dialogueAction, интерпретируя действие против живого NPC.
  */
 public sealed interface DialogueAction {
     Codec<DialogueAction> CODEC = Codec.STRING.dispatch("type", DialogueAction::codecId, DialogueAction::codecFor);
+
+    default List<String> targetPages() { return List.of(); }
 
     String codecId();
 
