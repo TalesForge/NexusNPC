@@ -5,7 +5,9 @@ import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
+import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
 import com.talesforge.masternpc.npc.model.NpcModels;
+import com.talesforge.masternpc.npc.quest.NpcQuests;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -143,6 +145,22 @@ public final class NpcSettingFields {
         return Double.isFinite(value) ? value : fallback;
     }
 
+    public static final NpcSettingField<NpcDialogue> DIALOGUE = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("dialogue"); }
+        public Codec<NpcDialogue> codec() { return NpcDialogue.CODEC; }
+        public NpcDialogue defaultValue() { return NpcDialogue.EMPTY; }
+        public NpcDialogue get(NpcEntity npc) { return npc.getDialogue(); }
+        public void set(NpcEntity npc, NpcDialogue value) { npc.setDialogue(value); }
+    };
+
+    public static final NpcSettingField<NpcQuests> QUESTS = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("quests"); }
+        public Codec<NpcQuests> codec() { return NpcQuests.CODEC; }
+        public NpcQuests defaultValue() { return NpcQuests.EMPTY; }
+        public NpcQuests get(NpcEntity npc) { return npc.getQuests(); }
+        public void set(NpcEntity npc, NpcQuests value) { npc.setQuests(value); }
+    };
+
     /**
      * Called once from {@code MasterNPC}'s constructor. Addons may register their own
      * fields afterwards, from their own mod constructor — registration order only affects
@@ -160,5 +178,7 @@ public final class NpcSettingFields {
         register(MAX_HEALTH);
         register(DAMAGE);
         register(SPEED);
+        register(DIALOGUE);
+        register(QUESTS);
     }
 }

@@ -18,15 +18,37 @@
 
   "gui.masternpc.editor.title": "NPC Settings",
   "gui.masternpc.creator.title": "Create NPC",
+
   "gui.masternpc.type": "Type",
   "gui.masternpc.name": "Name",
   "gui.masternpc.attitude": "Attitude",
   "gui.masternpc.behavior": "Behavior",
+
   "gui.masternpc.model": "Model",
   "gui.masternpc.skin": "Skin",
+
   "gui.masternpc.health": "Health",
   "gui.masternpc.damage": "Damage",
   "gui.masternpc.speed": "Speed",
+
+  "gui.masternpc.trade.title": "NPC Trades",
+  "gui.masternpc.trade.hint": "Cost 1, Cost 2 → Result",
+  "gui.masternpc.trade.edit": "Edit trades...",
+  "gui.masternpc.trade.edit.tooltip": "Opens the trade menu. Save other settings first — unsaved changes are lost.",
+
+  "gui.masternpc.dialogue.edit": "Edit dialogue...",
+  "gui.masternpc.dialogue.title": "Dialogue",
+  "gui.masternpc.dialogue.page_id": "Page id",
+  "gui.masternpc.dialogue.load": "Open page",
+  "gui.masternpc.dialogue.text": "Page text",
+  "gui.masternpc.dialogue.delete_page": "Delete page",
+  "gui.masternpc.dialogue.action.goto": "Go to page",
+  "gui.masternpc.dialogue.action.open_trade": "Open trade",
+  "gui.masternpc.dialogue.action.accept_quest": "Accept quest",
+  "gui.masternpc.dialogue.action.turn_in_quest": "Turn in quest",
+  "gui.masternpc.dialogue.action.close": "Close",
+
+  "gui.masternpc.done": "Done",
   "gui.masternpc.create": "Create",
   "gui.masternpc.save": "Save",
   "gui.masternpc.delete": "Delete",

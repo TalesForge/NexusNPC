@@ -1,13 +1,11 @@
 package com.talesforge.masternpc.network.handler;
 
+import com.talesforge.masternpc.client.gui.DialogueScreen;
 import com.talesforge.masternpc.client.gui.NpcEditorScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.entity.ModEntities;
+import com.talesforge.masternpc.network.payload.*;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
-import com.talesforge.masternpc.network.payload.CreateNpcPayload;
-import com.talesforge.masternpc.network.payload.OpenCreatorPayload;
-import com.talesforge.masternpc.network.payload.OpenEditorPayload;
-import com.talesforge.masternpc.network.payload.SaveNpcPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -62,5 +60,10 @@ public class ClientPayloadHandler {
             if (id != null) return id;
         }
         return ModEntities.NPC.getId();  // Defensive fallback, shouldn't normally happen
+    }
+
+
+    public static void openDialogue(OpenDialoguePayload payload, IPayloadContext context) {
+        Minecraft.getInstance().setScreen(new DialogueScreen(payload.entityId(), payload.page()));
     }
 }

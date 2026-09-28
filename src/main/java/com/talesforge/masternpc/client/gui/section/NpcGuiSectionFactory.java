@@ -13,4 +13,13 @@ public interface NpcGuiSectionFactory {
 
     /** initial holds the NPC's current settings (editing) or field defaults (creating). */
     NpcGuiSection create(NpcDataMap initial);
+
+    /**
+     * Same as {@link #create(NpcDataMap)}, but also tells the section which NPC it belongs to.
+     * Override this only if the section needs it (e.g. it opens a server-side menu for the
+     * NPC); by default the context is ignored.
+     */
+    default NpcGuiSection create(NpcDataMap initial, NpcGuiContext context) {
+        return create(initial);
+    }
 }

@@ -1,9 +1,6 @@
 package com.talesforge.masternpc.client.gui.section;
 
-import com.talesforge.masternpc.client.gui.section.core.AppearanceSection;
-import com.talesforge.masternpc.client.gui.section.core.IdentitySection;
-import com.talesforge.masternpc.client.gui.section.core.LogicSection;
-import com.talesforge.masternpc.client.gui.section.core.StatsSection;
+import com.talesforge.masternpc.client.gui.section.core.*;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -82,5 +79,7 @@ public final class NpcGuiRegistry {
         register(new LogicSection.Factory());
         register(new AppearanceSection.Factory());
         register(new StatsSection.Factory());
+        register(new DialogueSection.Factory());
+        register(new TradeSection.Factory());
     }
 }

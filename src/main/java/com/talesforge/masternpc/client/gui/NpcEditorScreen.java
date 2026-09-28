@@ -1,6 +1,7 @@
 package com.talesforge.masternpc.client.gui;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
+import com.talesforge.masternpc.client.gui.section.NpcGuiContext;
 import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSection;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSectionFactory;
@@ -76,8 +77,9 @@ public class NpcEditorScreen extends Screen {
             y += 24;
         }
 
+        NpcGuiContext context = new NpcGuiContext(entityId, creating, typeId);
         for (NpcGuiSectionFactory factory : NpcGuiRegistry.activeSections(typeId)) {
-            NpcGuiSection section = factory.create(initial);
+            NpcGuiSection section = factory.create(initial, context);
             y += section.build(x, y, w, this.font, this::addRenderableWidget, this::rebuild);
             activeSections.add(section);
         }

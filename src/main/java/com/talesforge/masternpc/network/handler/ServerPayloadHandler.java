@@ -5,18 +5,23 @@ import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
 import com.talesforge.masternpc.item.ModItems;
-import com.talesforge.masternpc.network.payload.CreateNpcPayload;
-import com.talesforge.masternpc.network.payload.DeleteNpcPayload;
-import com.talesforge.masternpc.network.payload.EditorStatusPayload;
-import com.talesforge.masternpc.network.payload.SaveNpcPayload;
+import com.talesforge.masternpc.menu.TradeEditMenu;
+import com.talesforge.masternpc.network.payload.*;
+import com.talesforge.masternpc.npc.dialogue.DialogueAction;
+import com.talesforge.masternpc.npc.dialogue.DialoguePage;
+import com.talesforge.masternpc.npc.quest.ModAttachments;
+import com.talesforge.masternpc.npc.quest.NpcQuest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class ServerPayloadHandler {
@@ -95,5 +100,70 @@ public class ServerPayloadHandler {
 
     private static int countNpcs(ServerLevel level) {
         return level.getEntities((Entity) null, AABB.INFINITE, e -> e instanceof NpcEntity).size();
+    }
+
+
+    public static void dialogueAction(DialogueActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (!(player.level().getEntity(payload.entityId()) instanceof NpcEntity npc)) return;
+        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) return;
+
+        DialoguePage page = npc.getDialogue().page(payload.pageId());
+        if (page == null || payload.optionIndex() < 0 || payload.optionIndex() >= page.options().size()) return;
+
+        switch (page.options().get(payload.optionIndex()).action()) {
+            case DialogueAction.Goto g -> sendPage(player, npc, g.pageId());
+            case DialogueAction.OpenTrade t -> player.openMenu(new SimpleMenuProvider(
+                    (id, inv, p) -> new MerchantMenu(id, inv, npc), npc.getDisplayName()));
+            case DialogueAction.AcceptQuest a -> {
+                NpcQuest quest = npc.getQuests().get(a.questId());
+                if (quest != null) {
+                    var progress = player.getData(ModAttachments.QUEST_PROGRESS);
+                    player.setData(ModAttachments.QUEST_PROGRESS, progress.accept(a.questId(), quest.objective()));
+                }
+                sendPage(player, npc, a.nextPageId());
+            }
+            case DialogueAction.TurnInQuest t -> {
+                var progress = player.getData(ModAttachments.QUEST_PROGRESS);
+                var active = progress.get(t.questId());
+                NpcQuest quest = npc.getQuests().get(t.questId());
+                boolean done = active != null && quest != null && active.objective().tryComplete(player, active.progress());
+                if (done) {
+                    player.setData(ModAttachments.QUEST_PROGRESS, progress.complete(t.questId()));
+                    if (!quest.reward().isEmpty() && !player.getInventory().add(quest.reward().copy())) {
+                        player.drop(quest.reward().copy(), false);
+                    }
+                    sendPage(player, npc, t.successPageId());
+                } else {
+                    sendPage(player, npc, t.failPageId());
+                }
+            }
+            case DialogueAction.Close c -> {}
+        }
+    }
+
+    private static void sendPage(ServerPlayer player, NpcEntity npc, String pageId) {
+        DialoguePage page = npc.getDialogue().page(pageId);
+        if (page != null) PacketDistributor.sendToPlayer(player, new OpenDialoguePayload(npc.getId(), page));
+    }
+
+
+    public static void openTradeEditor(OpenTradeEditorPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (!canManageNpcs(player)) {
+            player.sendSystemMessage(Component.translatable("message.masternpc.no_permission"));
+            return;
+        }
+
+        Entity entity = player.level().getEntity(payload.entityId());
+        if (!(entity instanceof NpcEntity npc)) return;
+        if (!npc.isEditedBy(player)) return;  // Same lock as saveNpc
+        if (player.distanceToSqr(npc) > NpcEntity.EDITOR_MAX_DIST_SQ) return;
+
+        player.openMenu(
+                new SimpleMenuProvider(
+                        (containerId, inventory, p) -> new TradeEditMenu(containerId, inventory, npc),
+                        Component.translatable("gui.masternpc.trade.title")),
+                buf -> buf.writeVarInt(npc.getId()));  // Extra data: lets the CLIENT build the same menu
     }
 }

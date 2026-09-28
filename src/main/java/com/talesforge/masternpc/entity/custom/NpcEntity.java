@@ -4,20 +4,29 @@ import com.talesforge.masternpc.api.event.NpcGoalsEvent;
 import com.talesforge.masternpc.api.event.NpcInteractEvent;
 import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.item.ModItems;
+import com.talesforge.masternpc.network.payload.OpenDialoguePayload;
 import com.talesforge.masternpc.npc.NpcRegistries;
+import com.talesforge.masternpc.npc.dialogue.DialoguePage;
+import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.masternpc.npc.attitude.NpcAttitudes;
 import com.talesforge.masternpc.npc.behavior.NpcBehaviors;
 import com.talesforge.masternpc.npc.model.NpcModelSkins;
 import com.talesforge.masternpc.npc.model.NpcModels;
+import com.talesforge.masternpc.npc.quest.NpcQuests;
+import com.talesforge.masternpc.npc.trade.NpcTrades;
+import com.talesforge.masternpc.npc.trade.TradeOffer;
 import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -29,13 +38,59 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.trading.Merchant;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class NpcEntity extends PathfinderMob {
+public class NpcEntity extends PathfinderMob implements Merchant {
+
+    // ===== Диалоги / квесты / торговля =====
+    private NpcDialogue dialogue = NpcDialogue.EMPTY;
+    private NpcQuests quests = NpcQuests.EMPTY;
+    private NpcTrades trades = NpcTrades.EMPTY;
+    @Nullable private MerchantOffers cachedOffers;
+    @Nullable private Player tradingPlayer;
+    private int villagerXp = 0;
+
+    public NpcDialogue getDialogue() { return dialogue; }
+    public void setDialogue(NpcDialogue dialogue) { this.dialogue = dialogue; }
+
+    public NpcQuests getQuests() { return quests; }
+    public void setQuests(NpcQuests quests) { this.quests = quests; }
+
+    public NpcTrades getTrades() { return trades; }
+    public void setTrades(NpcTrades trades) { this.trades = trades; this.cachedOffers = null; }
+
+    // ===== Merchant =====
+    @Override public void setTradingPlayer(@Nullable Player player) { this.tradingPlayer = player; }
+    @Override @Nullable public Player getTradingPlayer() { return tradingPlayer; }
+
+    @Override
+    public MerchantOffers getOffers() {
+        if (cachedOffers == null) {
+            cachedOffers = new MerchantOffers();
+            for (TradeOffer offer : trades.offers()) cachedOffers.add(offer.toMerchantOffer());
+        }
+        return cachedOffers;
+    }
+
+    @Override public void overrideOffers(MerchantOffers offers) {}  // Сделки не loot-table-driven — нечего переопределять
+    @Override public void notifyTrade(MerchantOffer offer) { offer.increaseUses(); playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F); }
+    @Override public void notifyTradeUpdated(ItemStack stack) {}
+    @Override public int getVillagerXp() { return villagerXp; }
+    @Override public void overrideXp(int xp) { this.villagerXp = xp; }
+    @Override public boolean showProgressBar() { return false; }
+    @Override public SoundEvent getNotifyTradeSound() { return SoundEvents.VILLAGER_YES; }
+    @Override public boolean isClientSide() { return level().isClientSide(); }
+
+
     private static final EntityDataAccessor<String > DATA_ATTITUDE =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_BEHAVIOR =
@@ -194,6 +249,9 @@ public class NpcEntity extends PathfinderMob {
         tag.putString("Behavior", getBehaviorId().toString());
         tag.putString("Model", getModelId().toString());
         tag.putString("Skin", entityData.get(DATA_SKIN));
+        tag.put("Dialogue", NpcDialogue.CODEC.encodeStart(NbtOps.INSTANCE, dialogue).getOrThrow());
+        tag.put("Quests", NpcQuests.CODEC.encodeStart(NbtOps.INSTANCE, quests).getOrThrow());
+        tag.put("Trades", NpcTrades.CODEC.encodeStart(NbtOps.INSTANCE, trades).getOrThrow());
     }
 
     @Override
@@ -203,6 +261,9 @@ public class NpcEntity extends PathfinderMob {
         if (tag.contains("Behavior")) entityData.set(DATA_BEHAVIOR, tag.getString("Behavior"));
         if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
         if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
+        // Dialogue
+        // Quests
+        // Trades
         refreshDimensions();
         refreshAi();
     }
@@ -233,7 +294,12 @@ public class NpcEntity extends PathfinderMob {
 
     /** Hook for heirs. By default, it does nothing. */
     protected InteractionResult onInteract(Player player, InteractionHand hand) {
-        return InteractionResult.PASS;
+        if (dialogue.isEmpty()) return InteractionResult.PASS;
+        if (player instanceof ServerPlayer serverPlayer) {
+            DialoguePage start = dialogue.page(DialoguePage.START_ID);
+            if (start != null) PacketDistributor.sendToPlayer(serverPlayer, new OpenDialoguePayload(getId(), start));
+        }
+        return InteractionResult.sidedSuccess(level().isClientSide());
     }
 
     /** NPC shouldn’t disappear when the player is far away */
