@@ -1,10 +1,17 @@
 package com.talesforge.masternpc.network.handler;
 
-import com.talesforge.masternpc.client.gui.DialogueScreen;
-import com.talesforge.masternpc.client.gui.NpcEditorScreen;
+import com.talesforge.masternpc.client.gui.screen.DialogueScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.NpcEditorScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.SettingsScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.dialogue.DialogueLibraryScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.entity.ModEntities;
-import com.talesforge.masternpc.network.payload.*;
+import com.talesforge.masternpc.network.payload.action.CreateNpcPayload;
+import com.talesforge.masternpc.network.payload.action.SaveNpcPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenCreatorPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenSettingsPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenDialoguePayload;
+import com.talesforge.masternpc.network.payload.screen.OpenEditorPayload;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -50,6 +57,12 @@ public class ClientPayloadHandler {
                         (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))));
         Minecraft.getInstance().setScreen(screen);
     }
+
+    public static void openSettings(OpenSettingsPayload payload, IPayloadContext context) {
+        ResourceLocation typeId = ModEntities.NPC.getId();
+        Minecraft.getInstance().setScreen(new SettingsScreen(NpcDataMap.defaults(), typeId));
+    }
+
 
     /** The NPC is already visible client-side (the player just interacted with it), so we can read its real type straight off it. */
     private static ResourceLocation resolveEntityType(int entityId) {

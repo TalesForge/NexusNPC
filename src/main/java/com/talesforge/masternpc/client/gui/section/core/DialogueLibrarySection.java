@@ -1,14 +1,11 @@
 package com.talesforge.masternpc.client.gui.section.core;
 
 import com.talesforge.masternpc.MasterNPC;
-import com.talesforge.masternpc.client.gui.DialogueEditScreen;
-import com.talesforge.masternpc.client.gui.DialogueListScreen;
-import com.talesforge.masternpc.client.gui.NpcEditorScreen;
+import com.talesforge.masternpc.client.gui.screen.CustomScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.dialogue.DialogueLibraryScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSection;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSectionFactory;
-import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
-import com.talesforge.masternpc.npc.field.NpcSettingFields;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -19,30 +16,36 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.Consumer;
 
-public final class DialogueSection implements NpcGuiSection {
+/**
+ * Just a button that opens the GLOBAL dialogue library (browse/create/edit/delete saved
+ * pages). Not tied to any one NPC, so it has nothing to read from or write back into an
+ * NpcDataMap — it used to round-trip NpcSettingFields.DIALOGUE for no reason (a leftover
+ * from before this was split out from the per-NPC dialogue section); removed that.
+ */
+public final class DialogueLibrarySection implements NpcGuiSection {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(MasterNPC.MOD_ID, "dialogue");
-    private NpcDialogue dialogue;
 
-    private DialogueSection(NpcDataMap initial) { this.dialogue = initial.get(NpcSettingFields.DIALOGUE); }
+    private DialogueLibrarySection() {}
 
     @Override
     public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
         addWidget.accept(Button.builder(
-                        Component.translatable("gui.masternpc.dialogue.edit", dialogue.pages().size()),
+                        Component.translatable("gui.masternpc.dialogue.library_title"),
                         b -> {
                             Screen parent = Minecraft.getInstance().screen;
-                            Screen child = new DialogueListScreen(parent, dialogue, updated -> this.dialogue = updated);
-                            if (parent instanceof NpcEditorScreen editor) editor.openChild(child);  // Keeps the lock
+                            Screen child = new DialogueLibraryScreen(parent, false, updated -> {});
+                            if (parent instanceof CustomScreen custom) custom.openChild(child);
                             else Minecraft.getInstance().setScreen(child);
                         })
                 .bounds(x, y, width, 20).build());
         return 24;
     }
 
-    @Override public void collect(NpcDataMap out) { out.put(NpcSettingFields.DIALOGUE, dialogue); }
+    @Override
+    public void collect(NpcDataMap out) {}
 
     public static final class Factory implements NpcGuiSectionFactory {
         @Override public ResourceLocation id() { return ID; }
-        @Override public NpcGuiSection create(NpcDataMap initial) { return new DialogueSection(initial); }
+        @Override public NpcGuiSection create(NpcDataMap initial) { return new DialogueLibrarySection(); }
     }
 }

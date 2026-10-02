@@ -1,4 +1,4 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.screen;
 
 import com.talesforge.masternpc.network.payload.DialogueActionPayload;
 import com.talesforge.masternpc.npc.dialogue.DialogueAction;
@@ -41,9 +41,6 @@ public class DialogueScreen extends Screen {
             }).bounds(x, y, w, 20).build());
             y += 24;
         }
-
-//        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-//                .bounds(x, y + 6, w, 20).build());
     }
 
     @Override public boolean isPauseScreen() { return true; }

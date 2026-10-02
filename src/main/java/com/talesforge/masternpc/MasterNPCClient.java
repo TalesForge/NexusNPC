@@ -2,7 +2,7 @@ package com.talesforge.masternpc;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
 import com.talesforge.masternpc.api.NpcTypeEntry;
-import com.talesforge.masternpc.client.gui.TradeEditScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.trade.TradeEditScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.client.model.NpcModelRenderers;
 import com.talesforge.masternpc.entity.client.NpcModel;

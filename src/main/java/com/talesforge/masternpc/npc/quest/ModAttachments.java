@@ -15,7 +15,7 @@ public final class ModAttachments {
         ATTACHMENT_TYPES.register(eventBus);
     }
 
-    /** copyOnDeath — терять прогресс квестов из-за смерти было бы неоправданно жёстко. */
+    /** copyOnDeath — losing quest progress due to death would be unreasonably harsh. */
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<NpcQuestProgress>> QUEST_PROGRESS =
             ATTACHMENT_TYPES.register("quest_progress", () -> AttachmentType.builder(() -> NpcQuestProgress.EMPTY)
                     .serialize(NpcQuestProgress.CODEC)

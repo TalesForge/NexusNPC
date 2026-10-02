@@ -1,12 +1,15 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.screen.settings.dialogue;
 
 import com.talesforge.masternpc.MasterNPC;
+import com.talesforge.masternpc.client.gui.NpcEditingScreen;
+import com.talesforge.masternpc.client.gui.screen.CustomScreen;
+import com.talesforge.masternpc.client.gui.screen.PagePickerScreen;
 import com.talesforge.masternpc.npc.dialogue.DialogueAction;
 import com.talesforge.masternpc.npc.dialogue.DialogueOption;
 import com.talesforge.masternpc.npc.dialogue.DialoguePage;
 import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
+import com.talesforge.masternpc.npc.field.NpcDataMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -17,12 +20,12 @@ import java.util.function.Consumer;
 
 /**
  * Edits ONE dialogue page: name, text and up to four answers. Where an answer leads is
- * picked from a list of the NPC's other dialogues (by name), not typed.
+ * picked from {@code linkTargets} (by name), not typed.
  * The source of truth is the draft below, not the widgets, so nothing typed is lost when the
  * screen is resized or a picker screen returns here.
  */
-public class DialogueEditScreen extends Screen {
-    private static final int MAX_OPTIONS = 1;
+public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen {
+    private static final int MAX_OPTIONS = 4;
 
     private enum Kind { GOTO, OPEN_TRADE, ACCEPT_QUEST, TURN_IN_QUEST, CLOSE }
 
@@ -34,9 +37,19 @@ public class DialogueEditScreen extends Screen {
         String pageB = "";  // Page on failure (turn-in only)
     }
 
-    private final Screen parent;
     private final NpcDialogue dialogue;
     private final Consumer<NpcDialogue> onDone;
+
+    /**
+     * The pool of pages a GOTO/accept/turn-in option can point at. For a page that's part of
+     * an NPC's own dialogue (DialogueListScreen) this is just {@code dialogue.pages()} — see
+     * the 4-arg constructor. A page edited from the standalone LIBRARY instead needs the
+     * whole library as its target pool, since {@code dialogue} there is only ever a
+     * throwaway single-page wrapper (see DialogueLibraryScreen#edit), not the real set of
+     * valid link targets.
+     */
+    private final List<DialoguePage> linkTargets;
+
     private final String pageId;
     private String name;
     private String text;
@@ -47,13 +60,18 @@ public class DialogueEditScreen extends Screen {
     private final EditBox[] optionText = new EditBox[MAX_OPTIONS];
     private final EditBox[] questBox = new EditBox[MAX_OPTIONS];
 
+    /** @param editing the page to edit, or null to create a new one. Link targets default to the dialogue's own pages. */
+    public DialogueEditScreen(Screen parent, NpcDialogue dialogue, DialoguePage editing, Consumer<NpcDialogue> onDone) {
+        this(parent, dialogue, editing, onDone, List.copyOf(dialogue.pages().values()));
+    }
+
     /** @param editing the page to edit, or null to create a new one */
     public DialogueEditScreen(Screen parent, NpcDialogue dialogue, DialoguePage editing,
-                              Consumer<NpcDialogue> onDone) {
-        super(Component.translatable("gui.masternpc.dialogue.title"));
-        this.parent = parent;
+                              Consumer<NpcDialogue> onDone, List<DialoguePage> linkTargets) {
+        super(Component.translatable("gui.masternpc.dialogue.title"), parent, NpcDataMap.empty());
         this.dialogue = dialogue;
         this.onDone = onDone;
+        this.linkTargets = linkTargets;
         this.pageId = editing != null ? editing.id() : dialogue.freshId();
         this.name = editing != null ? editing.name() : "";
         this.text = editing != null ? editing.text() : "";
@@ -79,7 +97,7 @@ public class DialogueEditScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
                 .bounds(x + w - 140, 6, 68, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.masternpc.done"), b -> finish())
+        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> finish())
                 .bounds(x + w - 70, 6, 70, 20).build());
 
         textBox = new MultiLineEditBox(font, x, 30, w, 44,
@@ -102,7 +120,7 @@ public class DialogueEditScreen extends Screen {
 
         int rowB = y + 22;
         addRenderableWidget(CycleButton.<Kind>builder(
-                k -> Component.translatable("gui.masternpc.dialogue.action." + k.name().toLowerCase(Locale.ROOT)))
+                        k -> Component.translatable("gui.masternpc.dialogue.action." + k.name().toLowerCase(Locale.ROOT)))
                 .withValues(Kind.values())
                 .withInitialValue(d.kind)
                 .displayOnlyValue()
@@ -129,11 +147,6 @@ public class DialogueEditScreen extends Screen {
             }
             default -> {}  // OPEN_TRADE and CLOSE need no parameters
         }
-    }
-
-    private void rebuild() {
-        this.clearWidgets();
-        this.init();
     }
 
     private void addQuestBox(int i, int bx, int by, int bw) {
@@ -164,10 +177,10 @@ public class DialogueEditScreen extends Screen {
         }));
     }
 
-    /** id -> display name of every page, including the one being edited (it may not be saved yet). */
+    /** id -> display name of every pickable link target, plus the page being edited (it may not be saved yet). */
     private Map<String, String> names() {
         Map<String, String> map = new LinkedHashMap<>();
-        for (DialoguePage p : dialogue.pages().values()) map.put(p.id(), p.displayName());
+        for (DialoguePage p : linkTargets) map.put(p.id(), p.displayName());
         map.put(pageId, name.isBlank() ? pageId : name.trim());
         return map;
     }
@@ -191,15 +204,20 @@ public class DialogueEditScreen extends Screen {
         syncDraft();
         List<DialogueOption> built = new ArrayList<>();
         for (OptionDraft d : options) {
+            // Add Options
             String t = d.text.trim();
             if (!t.isEmpty()) built.add(new DialogueOption(t, actionOf(d)));
         }
         String finalName = name.trim();
         if (finalName.isEmpty()) {
-            int number = dialogue.pages().size() + (dialogue.page(pageId) == null ? 1 : 0);
+            // Default Name — counted against linkTargets (the real pool: the NPC's dialogue,
+            // or the whole library), not `dialogue`, which in library mode only ever wraps
+            // the single page being edited and would always number everything "1".
+            int number = linkTargets.size() + (dialogue.page(pageId) == null ? 1 : 0);
             finalName = Component.translatable("gui.masternpc.dialogue.default_name", number).getString();
         }
-        onDone.accept(dialogue.withPage(new DialoguePage(pageId, finalName, text, built)));
+        onDone.accept(dialogue.withPage(new DialoguePage(pageId, finalName, text, built)));  // Add New / Replace
+
         Minecraft.getInstance().setScreen(parent);
     }
 

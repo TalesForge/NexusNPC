@@ -6,7 +6,7 @@ import com.talesforge.masternpc.api.event.NpcGoalsEvent;
 import com.talesforge.masternpc.api.event.NpcInteractEvent;
 import com.talesforge.masternpc.config.Config;
 import com.talesforge.masternpc.item.ModItems;
-import com.talesforge.masternpc.network.payload.OpenDialoguePayload;
+import com.talesforge.masternpc.network.payload.screen.OpenDialoguePayload;
 import com.talesforge.masternpc.npc.NpcRegistries;
 import com.talesforge.masternpc.npc.dialogue.DialoguePage;
 import com.talesforge.masternpc.npc.dialogue.NpcDialogue;
@@ -53,7 +53,7 @@ import java.util.UUID;
 
 public class NpcEntity extends PathfinderMob implements Merchant {
 
-    // ===== Диалоги / квесты / торговля =====
+    // ===== Dialogues / quests / trading =====
     private NpcDialogue dialogue = NpcDialogue.EMPTY;
     private NpcQuests quests = NpcQuests.EMPTY;
     private NpcTrades trades = NpcTrades.EMPTY;
@@ -299,8 +299,9 @@ public class NpcEntity extends PathfinderMob implements Merchant {
     /** RMB on NPC */
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
-        if (player.getItemInHand(hand).is(ModItems.STAFF_CONTROL)) {
-            return InteractionResult.PASS;  // The staff processes itself
+        if (player.getItemInHand(hand).is(ModItems.CONTROL_STAFF) ||
+            player.getItemInHand(hand).is(ModItems.GEAR_SETTINGS)) {
+            return InteractionResult.PASS;
         }
 
         // The event is triggered on both sides; the handler itself checks isClientSide()

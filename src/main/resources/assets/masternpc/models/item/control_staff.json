@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "masternpc:item/staff_control"
+    "layer0": "masternpc:item/control_staff"
   }
 }

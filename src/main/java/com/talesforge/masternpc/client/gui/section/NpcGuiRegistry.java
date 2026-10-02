@@ -70,16 +70,29 @@ public final class NpcGuiRegistry {
         return result;
     }
 
+    /**
+     * Finds a registered section factory by its ID.
+     * Returns empty if the section is disabled or not found.
+     */
+    public static synchronized Optional<NpcGuiSectionFactory> getSectionFactory(ResourceLocation sectionId) {
+        return SECTIONS.stream()
+                .filter(f -> f.id().equals(sectionId))
+                .findFirst();
+    }
+
     /** Called once from MasterNPCClient. Addons register their own sections afterwards, from their own client init. */
     @ApiStatus.Internal
     public static synchronized void bootstrap() {
         if (bootstrapped) return;
         bootstrapped = true;
         register(new IdentitySection.Factory());
+        register(new StatsSection.Factory());
         register(new LogicSection.Factory());
         register(new AppearanceSection.Factory());
-        register(new StatsSection.Factory());
-        register(new DialogueSection.Factory());
+
+        register(new DialogueLibrarySection.Factory());
+        register(new DialogueListSection.Factory());
+
         register(new TradeSection.Factory());
     }
 }

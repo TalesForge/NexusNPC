@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 
-/** "Убей N X" — ванильный моб, моб из другого мода или другой NPC MasterNPC — это всё просто id EntityType. */
+/** "Kill N X" — a vanilla mob, a mob from another mod, or another NPC MasterNPC — it’s all just an EntityType id. */
 public record KillObjective(EntityType<?> entityType, int count) implements NpcQuestObjective {
     public static final MapCodec<KillObjective> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("entity").forGetter(KillObjective::entityType),

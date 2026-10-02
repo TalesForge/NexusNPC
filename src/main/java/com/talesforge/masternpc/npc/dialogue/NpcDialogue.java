@@ -28,6 +28,10 @@ public record NpcDialogue(String startId, Map<String, DialoguePage> pages) {
     @Nullable
     public DialoguePage page(String id) { return pages.get(id); }
 
+    public boolean contains(String id) { return pages.containsKey(id); }
+
+    public boolean contains(DialoguePage page) { return contains(page.id()); }
+
     /** The page a conversation opens on: the chosen start page, or the first one if none is chosen (or it was lost). */
     @Nullable
     public DialoguePage startPage() {

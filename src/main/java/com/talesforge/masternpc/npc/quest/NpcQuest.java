@@ -7,7 +7,7 @@ import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-/** Один квест у NPC: цель + что выдать при успешной сдаче. */
+/** One quest from the NPC: goal + what to give upon successful completion. */
 public record NpcQuest(ResourceLocation id, Component title, NpcQuestObjective objective, ItemStack reward) {
     public static final Codec<NpcQuest> CODEC = RecordCodecBuilder.create(i -> i.group(
             ResourceLocation.CODEC.fieldOf("id").forGetter(NpcQuest::id),

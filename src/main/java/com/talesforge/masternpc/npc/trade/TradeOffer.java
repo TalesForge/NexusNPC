@@ -8,7 +8,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 
 import java.util.Optional;
 
-/** MerchantOffer своего публичного кодека не имеет — это то, что реально хранится/редактируется. */
+/** MerchantOffer does not have its own public codec — this is what is actually stored/edited. */
 public record TradeOffer(ItemCost cost1, Optional<ItemCost> cost2, ItemStack result) {
     public static final Codec<TradeOffer> CODEC = RecordCodecBuilder.create(i -> i.group(
             ItemCost.CODEC.fieldOf("cost1").forGetter(TradeOffer::cost1),
@@ -16,7 +16,7 @@ public record TradeOffer(ItemCost cost1, Optional<ItemCost> cost2, ItemStack res
             ItemStack.CODEC.fieldOf("result").forGetter(TradeOffer::result)
     ).apply(i, TradeOffer::new));
 
-    /** Пока без лимита использований — ограничение "на N сделок" оставляю на потом. */
+    /** For now, there’s no usage limit — I’ll leave the "per N trades" restriction for later. */
     public MerchantOffer toMerchantOffer() {
         return new MerchantOffer(cost1, cost2, result, Integer.MAX_VALUE, 0, 0.0f);
     }

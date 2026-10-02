@@ -1,5 +1,6 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.screen;
 
+import com.talesforge.masternpc.client.gui.NpcEditingScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /** "Where does this answer lead?" — pick one of the NPC's dialogues by name. */
-public class PagePickerScreen extends Screen {
+public class PagePickerScreen extends Screen implements NpcEditingScreen {
     private static final int VISIBLE = 8;
 
     private final Screen parent;

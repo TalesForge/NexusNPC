@@ -1,8 +1,8 @@
 package com.talesforge.masternpc.item.custom;
 
 import com.talesforge.masternpc.entity.custom.NpcEntity;
-import com.talesforge.masternpc.network.payload.OpenCreatorPayload;
-import com.talesforge.masternpc.network.payload.OpenEditorPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenCreatorPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenEditorPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,8 +16,8 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-public class StaffControlItem extends Item {
-    public StaffControlItem(Properties properties) {
+public class ControlStaffItem extends Item {
+    public ControlStaffItem(Properties properties) {
         super(properties);
     }
 

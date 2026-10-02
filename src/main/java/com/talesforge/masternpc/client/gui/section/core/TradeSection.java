@@ -1,11 +1,11 @@
 package com.talesforge.masternpc.client.gui.section.core;
 
 import com.talesforge.masternpc.MasterNPC;
-import com.talesforge.masternpc.client.gui.TradeEditScreen;
+import com.talesforge.masternpc.client.gui.screen.settings.trade.TradeEditScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiContext;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSection;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSectionFactory;
-import com.talesforge.masternpc.network.payload.OpenTradeEditorPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenTradeEditorPayload;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

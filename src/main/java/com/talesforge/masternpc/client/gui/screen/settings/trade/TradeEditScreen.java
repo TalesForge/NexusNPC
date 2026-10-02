@@ -1,5 +1,6 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.screen.settings.trade;
 
+import com.talesforge.masternpc.client.gui.NpcEditingScreen;
 import com.talesforge.masternpc.menu.TradeEditMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
  * Left: the trade grid and the player's inventory. Right: a short help panel and "Done".
  * Drawn with plain rectangles, so no texture asset is needed.
  */
-public class TradeEditScreen extends AbstractContainerScreen<TradeEditMenu> {
+public class TradeEditScreen extends AbstractContainerScreen<TradeEditMenu> implements NpcEditingScreen {
     private static final int MAIN_W = 176;
     private static final int GAP = 4;
     private static final int SIDE_W = 108;

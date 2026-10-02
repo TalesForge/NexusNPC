@@ -9,10 +9,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 /**
- * Прогресс игрока по квестам, хранится на Player (см. ModAttachments) — не на NPC, поэтому
- * переживает выгрузку/удаление NPC, который выдал квест. Для каждого активного квеста
- * храним снимок его цели (objective), взятый в момент принятия — больше не нужно искать
- * NPC, который выдал квест, чтобы узнать, что именно нужно сделать.
+ * The player's progress on quests is stored on the Player (see ModAttachments) —
+ * not on the NPC, so he is not afraid of unloading/deleting the NPC who issued the quest.
+ * For each active quest, we store an objective snapshot of its goal taken at the time of acceptance.
  */
 public final class NpcQuestProgress {
     public record ActiveQuest(NpcQuestObjective objective, int progress) {

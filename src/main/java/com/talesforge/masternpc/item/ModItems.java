@@ -2,8 +2,8 @@ package com.talesforge.masternpc.item;
 
 import com.talesforge.masternpc.MasterNPC;
 import com.talesforge.masternpc.entity.ModEntities;
-import com.talesforge.masternpc.item.custom.StaffControlItem;
-import net.minecraft.world.food.FoodProperties;
+import com.talesforge.masternpc.item.custom.ControlStaffItem;
+import com.talesforge.masternpc.item.custom.GearSettingsItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -13,7 +13,6 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -44,8 +43,13 @@ public class ModItems {
 
 
     // ===== ITEMS =====
-    public static final DeferredItem<Item> STAFF_CONTROL = regItem("staff_control",
-            StaffControlItem::new,
+    public static final DeferredItem<Item> CONTROL_STAFF = regItem("control_staff",
+            ControlStaffItem::new,
+            new Item.Properties()
+                    .stacksTo(1)
+    );
+    public static final DeferredItem<Item> GEAR_SETTINGS = regItem("gear_settings",
+            GearSettingsItem::new,
             new Item.Properties()
                     .stacksTo(1)
     );

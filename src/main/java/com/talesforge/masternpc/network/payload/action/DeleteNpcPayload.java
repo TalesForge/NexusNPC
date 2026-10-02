@@ -1,4 +1,4 @@
-package com.talesforge.masternpc.network.payload;
+package com.talesforge.masternpc.network.payload.action;
 
 import com.talesforge.masternpc.MasterNPC;
 import net.minecraft.network.FriendlyByteBuf;

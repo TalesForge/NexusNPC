@@ -10,9 +10,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Открытый список видов целей — тот же паттерн, что NpcSettingFields: три встроенных вида
- * регистрируются через тот же register(...), которым аддон добавит свой ("дойди до репутации N
- * у фракции", "поговори с другим NPC").
+ * The open list of target types follows the same pattern as NpcSettingFields:
+ * three built‑in types are registered via the same register(...) method,
+ * which the addon will use to add its own
+ * ("reach reputation level N with the faction", "talk to another NPC").
  */
 public final class NpcQuestObjectiveTypes {
     private static final Map<ResourceLocation, MapCodec<? extends NpcQuestObjective>> TYPES = new LinkedHashMap<>();

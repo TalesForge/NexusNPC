@@ -1,7 +1,7 @@
 package com.talesforge.masternpc.client.gui;
 
 import com.talesforge.masternpc.MasterNPC;
-import com.talesforge.masternpc.network.payload.EditorStatusPayload;
+import com.talesforge.masternpc.network.payload.action.EditorStatusPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,10 +27,17 @@ public final class EditorKeepAlive {
     public static void onClientTick(ClientTickEvent.Post event) {
         if (entityId < 0) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() == null || mc.screen == null) {   // disconnected or every screen closed: session is over
+
+        if (mc.getConnection() == null || !(mc.screen instanceof NpcEditingScreen)) {
+            // None of our screens is showing anymore: the session is really over.
+            // Tell the server RIGHT NOW instead of waiting for the 5-second server-side timeout.
+            int id = entityId;
+            boolean connected = mc.getConnection() != null;
             stop();
+            if (connected) PacketDistributor.sendToServer(new EditorStatusPayload(id, true));
             return;
         }
+
         if (++timer >= 20) {
             timer = 0;
             PacketDistributor.sendToServer(new EditorStatusPayload(entityId, false));

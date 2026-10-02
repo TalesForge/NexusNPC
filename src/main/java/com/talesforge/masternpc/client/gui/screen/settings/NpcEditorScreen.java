@@ -1,24 +1,27 @@
-package com.talesforge.masternpc.client.gui;
+package com.talesforge.masternpc.client.gui.screen.settings;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
+import com.talesforge.masternpc.client.gui.EditorKeepAlive;
+import com.talesforge.masternpc.client.gui.NpcEditingScreen;
+import com.talesforge.masternpc.client.gui.screen.CustomScreen;
 import com.talesforge.masternpc.client.gui.section.NpcGuiContext;
 import com.talesforge.masternpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSection;
 import com.talesforge.masternpc.client.gui.section.NpcGuiSectionFactory;
-import com.talesforge.masternpc.network.payload.DeleteNpcPayload;
-import com.talesforge.masternpc.network.payload.EditorStatusPayload;
+import com.talesforge.masternpc.client.gui.section.core.DialogueLibrarySection;
+import com.talesforge.masternpc.client.gui.section.core.DialogueListSection;
+import com.talesforge.masternpc.network.payload.action.DeleteNpcPayload;
+import com.talesforge.masternpc.network.payload.action.EditorStatusPayload;
 import com.talesforge.masternpc.npc.field.NpcDataMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -30,42 +33,30 @@ import java.util.function.BiConsumer;
  * an {@code NpcGuiScreenFactory} override instead of going through this class at all —
  * see {@code ClientPayloadHandler}, which checks for that override before constructing this.
  */
-public class NpcEditorScreen extends Screen {
-    private boolean childOpen = false;
+public class NpcEditorScreen extends CustomScreen implements NpcEditingScreen {
 
     private final BiConsumer<ResourceLocation, NpcDataMap> onConfirm;
-    private NpcDataMap initial;
     private ResourceLocation typeId;
     private final boolean creating;
 
     private final int entityId;  // -1 if this is a creation window (no locking is needed)
-//    private int pingTimer = 0;
     private boolean isDeleted = false;
 
-    private final List<NpcGuiSection> activeSections = new ArrayList<>();
     private int formTop;
 
     public NpcEditorScreen(Component title, NpcDataMap initial, boolean creating, int entityId,
                            ResourceLocation typeId, BiConsumer<ResourceLocation, NpcDataMap> onConfirm) {
-        super(title);
+        super(title, null, initial);
         this.creating = creating;
         this.entityId = entityId;
-        this.initial = initial;
         this.typeId = typeId;
         this.onConfirm = onConfirm;
     }
 
     @Override
     protected void init() {
-        childOpen = false;
+        super.init();
         if (entityId >= 0) EditorKeepAlive.start(entityId);
-
-        // init() runs again when a child screen hands control back, or the window is resized.
-        // The sections holding the edits are still alive here: snapshot them BEFORE clearing.
-        if (!activeSections.isEmpty()) {
-            this.initial = this.initial.withOverrides(collectAll());
-        }
-        activeSections.clear();
 
         int w = 200;
         int x = this.width / 2 - w / 2;
@@ -89,8 +80,15 @@ public class NpcEditorScreen extends Screen {
         NpcGuiContext context = new NpcGuiContext(entityId, creating, typeId);
         for (NpcGuiSectionFactory factory : NpcGuiRegistry.activeSections(typeId)) {
             NpcGuiSection section = factory.create(initial, context);
-            y += section.build(x, y, w, this.font, this::addRenderableWidget, this::rebuild);
-            activeSections.add(section);
+
+            boolean shouldAdd = switch (section) {
+                case DialogueListSection s -> !creating;
+                case DialogueLibrarySection s -> false;
+                default -> true;
+            };
+
+            if (!shouldAdd) continue;
+            y += addSectionToScreen(section, x, y, w);
         }
 
         Component confirmText = Component.translatable(creating ? "gui.masternpc.create" : "gui.masternpc.save");
@@ -113,57 +111,16 @@ public class NpcEditorScreen extends Screen {
                 .bounds(x, y + 30 + 6, w, 20).build());
     }
 
-    /** Opens a child screen (dialogues, ...) without giving up the NPC's editing lock. */
-    public void openChild(Screen child) {
-        childOpen = true;
-        Minecraft.getInstance().setScreen(child);
-    }
-
-    /**
-     * Re-lays out the whole screen — a different NPC type or a different model can mean a
-     * different set of active sections / valid values. Snapshots every currently active
-     * section's in-progress edits into {@code initial} first, so nothing the player already
-     * typed elsewhere gets discarded just because one unrelated widget changed.
-     */
-    private void rebuild() {
-        this.clearWidgets();
-        this.init();
-    }
-
-    /**
-     * Only ever contains what the currently active sections chose to write. A section that
-     * isn't active for this NPC type (or belongs to an addon not present at all) never gets
-     * asked, so its field is simply absent here — and NpcDataMap#applyAll on the server
-     * leaves anything absent completely untouched. Nothing gets silently reset.
-     */
-    private NpcDataMap collectAll() {
-        NpcDataMap data = NpcDataMap.empty();
-        for (NpcGuiSection section : activeSections) {
-            section.collect(data);
-        }
-        return data;
-    }
-
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);  // Background and widgets
         graphics.drawCenteredString(this.font, this.title, this.width / 2, formTop - 16, 0xFFFFFF);
     }
 
-//    @Override
-//    public void tick() {
-//        super.tick();
-//        if (entityId >= 0 && ++pingTimer >= 20) {
-//            pingTimer = 0;
-//            sendStatus(false);
-//        }
-//    }
-
-    // This is triggered by ANY screen closure: buttons, Esc, replacement with another screen, or shutdown
     @Override
     public void removed() {
         super.removed();
-        if (childOpen) return;
+        if (childIsOpen()) return;
         EditorKeepAlive.stop();
         if (entityId >= 0 && !isDeleted) sendStatus(true);
     }

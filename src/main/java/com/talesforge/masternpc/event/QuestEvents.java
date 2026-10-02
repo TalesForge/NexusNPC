@@ -11,9 +11,9 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
- * Ведёт счётчики для целей, которым нужен внешний триггер (kill, travel) — см.
- * NpcQuestObjective#tracksProgress(). CollectItemObjective слушателя не требует:
- * проверяется вживую по инвентарю в момент сдачи квеста.
+ * Tracks counters for objectives that require an external trigger (kill, travel) — see
+ * NpcQuestObjective#tracksProgress(). CollectItemObjective does not require a listener:
+ * it is checked live against the inventory at the time the quest is completed.
  */
 @EventBusSubscriber(modid = MasterNPC.MOD_ID)
 public final class QuestEvents {
@@ -32,7 +32,7 @@ public final class QuestEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (player.tickCount % 20 != 0) return; // раз в секунду достаточно
+        if (player.tickCount % 20 != 0) return;
 
         var progress = player.getData(ModAttachments.QUEST_PROGRESS);
         var updated = progress.setMatchingAtLeast(o -> o instanceof TravelObjective t

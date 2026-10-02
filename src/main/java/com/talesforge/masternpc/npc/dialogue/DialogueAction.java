@@ -8,8 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 /**
- * Что происходит при клике по варианту ответа. Ничего не знает про NpcEntity и сеть —
- * это делает ServerPayloadHandler#dialogueAction, интерпретируя действие против живого NPC.
+ * What happens when you click on an answer option. It knows nothing about NpcEntity and the network —
+ * this is handled by ServerPayloadHandler#dialogueAction, which interprets the action against a living NPC.
  */
 public sealed interface DialogueAction {
     Codec<DialogueAction> CODEC = Codec.STRING.dispatch("type", DialogueAction::codecId, DialogueAction::codecFor);
@@ -29,7 +29,7 @@ public sealed interface DialogueAction {
         };
     }
 
-    /** Перейти на другую страницу того же дерева диалога. */
+    /** Go to another page of the same dialogue tree. */
     record Goto(String pageId) implements DialogueAction {
         static final String ID = "goto";
         static final MapCodec<Goto> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
@@ -38,14 +38,14 @@ public sealed interface DialogueAction {
         public String codecId() { return ID; }
     }
 
-    /** Закрыть диалог и открыть окно торговли NPC (ванильный Merchant UI). */
+    /** Close the dialogue and open the NPC trading window (vanilla UI). */
     record OpenTrade() implements DialogueAction {
         static final String ID = "open_trade";
         static final MapCodec<OpenTrade> CODEC = MapCodec.unit(OpenTrade::new);
         public String codecId() { return ID; }
     }
 
-    /** Пометить квест активным у игрока, затем перейти на nextPageId. */
+    /** Mark the quest as active for the player, then go to nextPageId. */
     record AcceptQuest(ResourceLocation questId, String nextPageId) implements DialogueAction {
         static final String ID = "accept_quest";
         static final MapCodec<AcceptQuest> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
@@ -56,8 +56,10 @@ public sealed interface DialogueAction {
     }
 
     /**
-     * Проверяет, выполнена ли цель квеста прямо сейчас; если да — заберёт нужное
-     * (для CollectItemObjective), выдаст награду и уйдёт на successPageId, иначе — на failPageId.
+     * Checks whether the quest objective is completed right now;
+     * if yes, it will collect the required item (for CollectItemObjective),
+     * issue the reward, and navigate to successPageId;
+     * otherwise, it will navigate to failPageId.
      */
     record TurnInQuest(ResourceLocation questId, String successPageId, String failPageId) implements DialogueAction {
         static final String ID = "turn_in_quest";
@@ -69,7 +71,7 @@ public sealed interface DialogueAction {
         public String codecId() { return ID; }
     }
 
-    /** Просто закрывает окно диалога у игрока. */
+    /** It simply closes the player’s dialogue window. */
     record Close() implements DialogueAction {
         static final String ID = "close";
         static final MapCodec<Close> CODEC = MapCodec.unit(Close::new);

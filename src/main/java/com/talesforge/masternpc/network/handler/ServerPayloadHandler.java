@@ -2,11 +2,16 @@ package com.talesforge.masternpc.network.handler;
 
 import com.talesforge.masternpc.api.MasterNpcApi;
 import com.talesforge.masternpc.config.Config;
-import com.talesforge.masternpc.entity.ModEntities;
 import com.talesforge.masternpc.entity.custom.NpcEntity;
 import com.talesforge.masternpc.item.ModItems;
 import com.talesforge.masternpc.menu.TradeEditMenu;
 import com.talesforge.masternpc.network.payload.*;
+import com.talesforge.masternpc.network.payload.action.CreateNpcPayload;
+import com.talesforge.masternpc.network.payload.action.DeleteNpcPayload;
+import com.talesforge.masternpc.network.payload.action.EditorStatusPayload;
+import com.talesforge.masternpc.network.payload.action.SaveNpcPayload;
+import com.talesforge.masternpc.network.payload.screen.OpenDialoguePayload;
+import com.talesforge.masternpc.network.payload.screen.OpenTradeEditorPayload;
 import com.talesforge.masternpc.npc.dialogue.DialogueAction;
 import com.talesforge.masternpc.npc.dialogue.DialoguePage;
 import com.talesforge.masternpc.npc.quest.ModAttachments;
@@ -26,8 +31,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class ServerPayloadHandler {
     private static boolean holdsStaff(Player player) {
-        return player.getMainHandItem().is(ModItems.STAFF_CONTROL)
-                || player.getOffhandItem().is(ModItems.STAFF_CONTROL);
+        return player.getMainHandItem().is(ModItems.CONTROL_STAFF)
+                || player.getOffhandItem().is(ModItems.CONTROL_STAFF);
     }
 
     /** One staff is not enough: operator rights are required, unless this is disabled in the config. */

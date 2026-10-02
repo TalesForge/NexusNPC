@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-/** "Принеси N предметов X" — работает с любыми предметами, в т.ч. из других модов: это просто поиск по реестру. */
+/** "Bring N items of type X" — works with any items, including those from other mods: it’s just a search in the registry.. */
 public record CollectItemObjective(Item item, int count) implements NpcQuestObjective {
     public static final MapCodec<CollectItemObjective> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
             BuiltInRegistries.ITEM.byNameCodec().fieldOf("item").forGetter(CollectItemObjective::item),

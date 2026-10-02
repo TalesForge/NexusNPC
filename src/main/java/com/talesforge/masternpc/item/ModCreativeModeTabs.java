@@ -20,11 +20,12 @@ public class ModCreativeModeTabs {
     // Creates a creative tab for the mod items
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NPC_TAB = CREATIVE_MODE_TABS.register("npc_tab", () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.masternpc.all"))
-            .icon(() -> ModItems.STAFF_CONTROL.get().getDefaultInstance())
+            .icon(() -> ModItems.CONTROL_STAFF.get().getDefaultInstance())
             .withTabsBefore(CreativeModeTabs.COMBAT)
             .displayItems((parameters, output) -> {
                 // TOOLS
-                output.accept(ModItems.STAFF_CONTROL.get());
+                output.accept(ModItems.CONTROL_STAFF.get());
+                output.accept(ModItems.GEAR_SETTINGS.get());
 
                 // EGGS
                 output.accept(ModItems.NPC_SPAWN_EGG.get());

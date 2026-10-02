@@ -11,16 +11,16 @@ public interface NpcQuestObjective {
 
     ResourceLocation typeId();
 
-    /** Строка статуса для диалога/журнала квестов. */
+    /** Status bar for the dialogue/quest journal. */
     Component describe();
 
-    /** true — если QuestEvents должен вести счётчик прогресса (kill, travel); collect проверяется вживую при сдаче. */
+    /** true — if QuestEvents should maintain a progress counter (kill, travel); collect is checked in real time upon submission. */
     default boolean tracksProgress() { return false; }
 
     /**
-     * Вызывается при попытке игрока сдать квест. progress — счётчик, который вёл QuestEvents
-     * (0, если tracksProgress()==false). Возвращает true (и производит побочный эффект,
-     * например забирает предметы), если цель выполнена прямо сейчас.
+     * This is called when the player attempts to complete the quest.
+     * progress — a counter that kept track of QuestEvents (0 if tracksProgress()==false).
+     * Returns true (and performs a side effect, for example, takes items) if the objective is completed right now.
      */
     boolean tryComplete(ServerPlayer player, int progress);
 }

@@ -3,6 +3,11 @@ package com.talesforge.masternpc.network;
 import com.talesforge.masternpc.network.handler.ServerPayloadHandler;
 import com.talesforge.masternpc.network.payload.*;
 import com.talesforge.masternpc.network.handler.ClientPayloadHandler;
+import com.talesforge.masternpc.network.payload.action.CreateNpcPayload;
+import com.talesforge.masternpc.network.payload.action.DeleteNpcPayload;
+import com.talesforge.masternpc.network.payload.action.EditorStatusPayload;
+import com.talesforge.masternpc.network.payload.action.SaveNpcPayload;
+import com.talesforge.masternpc.network.payload.screen.*;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
@@ -13,6 +18,7 @@ public class ModNetwork {
         registrar.playToClient(OpenEditorPayload.TYPE, OpenEditorPayload.STREAM_CODEC, ClientPayloadHandler::openEditor);
         registrar.playToClient(OpenCreatorPayload.TYPE, OpenCreatorPayload.STREAM_CODEC, ClientPayloadHandler::openCreator);
         registrar.playToClient(OpenDialoguePayload.TYPE, OpenDialoguePayload.STREAM_CODEC, ClientPayloadHandler::openDialogue);
+        registrar.playToClient(OpenSettingsPayload.TYPE, OpenSettingsPayload.STREAM_CODEC, ClientPayloadHandler::openSettings);
 
         registrar.playToServer(SaveNpcPayload.TYPE, SaveNpcPayload.STREAM_CODEC, ServerPayloadHandler::saveNpc);
         registrar.playToServer(CreateNpcPayload.TYPE, CreateNpcPayload.STREAM_CODEC, ServerPayloadHandler::createNpc);
