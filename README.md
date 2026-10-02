@@ -1,8 +1,8 @@
-# MasterNPC
+# NexusNPC
 
 **[English](README.md) | [Русский](README.ru.md)**
 
-A NeoForge 1.21.1 framework for creating custom NPCs. MasterNPC handles the
+A NeoForge 1.21.1 framework for creating custom NPCs. NexusNPC handles the
 shared plumbing (entity registration, attitude/behavior AI, networking, an
 in-game editor screen) so other mods can add their own NPC types, dialogue,
 skins, and behaviors without rewriting the basics.
@@ -15,7 +15,7 @@ skins, and behaviors without rewriting the basics.
   `NpcRegistries.BEHAVIORS` let addons register their own attitude/behavior
   types (`NpcAttitudeType`, `NpcBehaviorType`) alongside the built-in
   `friendly` / `neutral` / `hostile` and `stay` / `wander` / `avoid_players`.
-- **`MasterNpcApi`** — register new NPC entity types (`registerType`), skins
+- **`NexusNPCApi`** — register new NPC entity types (`registerType`), skins
   (`registerSkin`), and spawn NPCs by type id (`spawn`) without duplicating
   attribute/renderer boilerplate.
 - **Events** — `NpcInteractEvent` (right-click) and `NpcGoalsEvent` (AI goal
@@ -40,7 +40,7 @@ skins, and behaviors without rewriting the basics.
 ```java
 // Register a new NPC type reusing the base entity or your own subclass
 public static final DeferredHolder<EntityType<?>, EntityType<NpcEntity>> MY_NPC =
-        MasterNpcApi.registerType(ENTITY_TYPES, "my_npc", NpcEntity::new,
+        NexusNPCApi.registerType(ENTITY_TYPES, "my_npc", NpcEntity::new,
                 NpcTypeProperties.create()
                         .category(MobCategory.CREATURE)
                         .size(0.6F, 1.8F)
@@ -54,12 +54,12 @@ static {
 }
 ```
 
-See the Javadoc on `MasterNpcApi`, `NpcRegistries`, `NpcInteractEvent`, and
+See the Javadoc on `NexusNPCApi`, `NpcRegistries`, `NpcInteractEvent`, and
 `NpcGoalsEvent` for details.
 
 ## Configuration
 
-Server-synced config (`config/masternpc-server.toml`):
+Server-synced config (`config/nexusnpc-server.toml`):
 
 | Key | Default | Description |
 |---|---|---|

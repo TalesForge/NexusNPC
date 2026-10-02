@@ -1,8 +1,8 @@
-# MasterNPC
+# NexusNPC
 
 **[English](README.md) | [Русский](README.ru.md)**
 
-Фреймворк для NeoForge 1.21.1, упрощающий создание кастомных NPC. MasterNPC
+Фреймворк для NeoForge 1.21.1, упрощающий создание кастомных NPC. NexusNPC
 берёт на себя общую инфраструктуру (регистрация сущностей, AI отношения и
 поведения, сеть, экран настройки в игре), чтобы другие моды могли добавлять
 свои типы NPC, диалоги, скины и поведения, не переписывая базу заново.
@@ -16,7 +16,7 @@
   отношения и поведения (`NpcAttitudeType`, `NpcBehaviorType`) рядом со
   встроенными `friendly` / `neutral` / `hostile` и
   `stay` / `wander` / `avoid_players`.
-- **`MasterNpcApi`** — регистрация новых типов NPC (`registerType`), скинов
+- **`NexusNPCApi`** — регистрация новых типов NPC (`registerType`), скинов
   (`registerSkin`) и спавн NPC по id типа (`spawn`) без дублирования кода
   атрибутов и рендерера.
 - **События** — `NpcInteractEvent` (клик) и `NpcGoalsEvent` (сборка целей
@@ -41,7 +41,7 @@
 ```java
 // Регистрация нового типа NPC на основе базовой сущности или своего наследника
 public static final DeferredHolder<EntityType<?>, EntityType<NpcEntity>> MY_NPC =
-        MasterNpcApi.registerType(ENTITY_TYPES, "my_npc", NpcEntity::new,
+        NexusNPCApi.registerType(ENTITY_TYPES, "my_npc", NpcEntity::new,
                 NpcTypeProperties.create()
                         .category(MobCategory.CREATURE)
                         .size(0.6F, 1.8F)
@@ -55,12 +55,12 @@ static {
 }
 ```
 
-Подробности — в Javadoc классов `MasterNpcApi`, `NpcRegistries`,
+Подробности — в Javadoc классов `NexusNPCApi`, `NpcRegistries`,
 `NpcInteractEvent` и `NpcGoalsEvent`.
 
 ## Конфигурация
 
-Серверный конфиг (`config/masternpc-server.toml`):
+Серверный конфиг (`config/nexusnpc-server.toml`):
 
 | Ключ | По умолчанию | Описание |
 |---|---|---|
