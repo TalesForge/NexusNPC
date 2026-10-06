@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen {
     private static final int MAX_OPTIONS = 4;
 
-    private enum Kind { GOTO, OPEN_TRADE, ACCEPT_QUEST, TURN_IN_QUEST, CLOSE }
+    private enum Kind { GOTO, OPEN_TRADE, ACCEPT_QUEST, TURN_IN_QUEST, CLOSE, CUSTOM }
 
     private static final class OptionDraft {
         String text = "";
@@ -35,6 +35,7 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
         String quest = "";  // Quest id as typed
         String pageA = "";  // Goto target / next page after accepting / page on success ("" = the starting dialogue)
         String pageB = "";  // Page on failure (turn-in only)
+        DialogueAction.Custom custom;  // Addon action: only preserved, never created in this GUI
     }
 
     private final NpcDialogue dialogue;
@@ -121,7 +122,7 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
         int rowB = y + 22;
         addRenderableWidget(CycleButton.<Kind>builder(
                         k -> Component.translatable("gui.nexusnpc.dialogue.action." + k.name().toLowerCase(Locale.ROOT)))
-                .withValues(Kind.values())
+                .withValues(kindsFor(d))
                 .withInitialValue(d.kind)
                 .displayOnlyValue()
                 .create(x, rowB, 100, 20, Component.empty(), (button, value) -> {
@@ -228,6 +229,11 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
     }
 
     // ========== Draft <-> Action ==========
+    /** CUSTOM is offered only for options that already are CUSTOM (addon actions cannot be authored here). */
+    private static List<Kind> kindsFor(OptionDraft d) {
+        return Arrays.stream(Kind.values()).filter(k -> k != Kind.CUSTOM || d.kind == Kind.CUSTOM).toList();
+    }
+
     private static OptionDraft draftOf(DialogueOption option) {
         OptionDraft d = new OptionDraft();
         d.text = option.text();
@@ -246,6 +252,7 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
                 d.pageB = t.failPageId();
             }
             case DialogueAction.Close c -> d.kind = Kind.CLOSE;
+            case DialogueAction.Custom c -> { d.kind = Kind.CUSTOM; d.custom = c; }
         }
         return d;
     }
@@ -257,6 +264,7 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
             case ACCEPT_QUEST -> new DialogueAction.AcceptQuest(questId(d.quest), d.pageA);
             case TURN_IN_QUEST -> new DialogueAction.TurnInQuest(questId(d.quest), d.pageA, d.pageB);
             case CLOSE -> new DialogueAction.Close();
+            case CUSTOM -> d.custom != null ? d.custom : new DialogueAction.Close();
         };
     }
 

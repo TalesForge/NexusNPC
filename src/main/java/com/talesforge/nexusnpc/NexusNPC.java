@@ -1,5 +1,6 @@
 package com.talesforge.nexusnpc;
 
+import com.talesforge.nexusnpc.compat.rpg.NexusRpgCompat;
 import com.talesforge.nexusnpc.config.Config;
 import com.talesforge.nexusnpc.entity.ModEntities;
 import com.talesforge.nexusnpc.item.ModItems;
@@ -34,6 +35,7 @@ public class NexusNPC {
 
     public NexusNPC(IEventBus modEventBus, ModContainer modContainer) {
         NpcSettingFields.bootstrap();  // Must run before any addon relies on the field list being populated
+        NexusRpgCompat.bootstrap();  // faction / classes / team fields (only if NexusRPG is installed)
         NpcQuestObjectiveTypes.bootstrap();
 
         modEventBus.addListener(ModNetwork::register);

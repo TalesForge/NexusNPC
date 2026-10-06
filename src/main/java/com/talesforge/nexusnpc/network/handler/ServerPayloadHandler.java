@@ -1,5 +1,6 @@
 package com.talesforge.nexusnpc.network.handler;
 
+import com.talesforge.nexusnpc.npc.dialogue.DialogueActionHandlers;
 import com.talesforge.nexusnpc.api.NexusNpcApi;
 import com.talesforge.nexusnpc.config.Config;
 import com.talesforge.nexusnpc.entity.custom.NpcEntity;
@@ -157,6 +158,12 @@ public class ServerPayloadHandler {
                 } else {
                     sendPage(player, npc, t.failPageId());
                 }
+            }
+            case DialogueAction.Custom c -> {
+                DialogueActionHandlers.Handler handler = DialogueActionHandlers.get(c.handlerId());
+                boolean ok = handler != null && handler.handle(player, npc, c);
+                String next = ok ? c.successPageId() : c.failPageId();
+                if (!next.isBlank()) sendPage(player, npc, next);  // Blank = the dialogue just ends
             }
             case DialogueAction.Close c -> {}
         }

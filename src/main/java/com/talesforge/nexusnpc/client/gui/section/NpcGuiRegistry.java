@@ -1,6 +1,7 @@
 package com.talesforge.nexusnpc.client.gui.section;
 
 import com.talesforge.nexusnpc.client.gui.section.core.*;
+import com.talesforge.nexusnpc.compat.rpg.client.NexusRpgClientCompat;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -88,6 +89,7 @@ public final class NpcGuiRegistry {
         register(new IdentitySection.Factory());
         register(new StatsSection.Factory());
         register(new LogicSection.Factory());
+        NexusRpgClientCompat.registerGui();  // faction / classes / team (only if NexusRPG is installed)
         register(new AppearanceSection.Factory());
 
         register(new DialogueLibrarySection.Factory());

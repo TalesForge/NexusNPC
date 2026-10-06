@@ -65,5 +65,12 @@
   "npc_behavior.nexusnpc.avoid_players": "Avoid players",
   "npc_behavior.nexusnpc.stay": "Stay",
   "npc_behavior.nexusnpc.wander": "Wander",
-  "npc_model.nexusnpc.humanoid": "Humanoid"
+  "npc_model.nexusnpc.humanoid": "Humanoid",
+  
+  "gui.nexusnpc.faction": "Faction",
+  "gui.nexusnpc.classes": "Classes (a, b, c)",
+  "gui.nexusnpc.team": "Team",
+  "gui.nexusnpc.none": "None",
+  "npc_attitude.nexusnpc.faction_based": "By faction",
+  "gui.nexusnpc.dialogue.action.custom": "Special (addon)"
 }

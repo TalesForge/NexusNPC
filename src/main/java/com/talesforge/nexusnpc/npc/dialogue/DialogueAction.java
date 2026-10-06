@@ -25,6 +25,7 @@ public sealed interface DialogueAction {
             case AcceptQuest.ID -> AcceptQuest.CODEC;
             case TurnInQuest.ID -> TurnInQuest.CODEC;
             case Close.ID -> Close.CODEC;
+            case Custom.ID -> Custom.CODEC;
             default -> throw new IllegalArgumentException("Unknown dialogue action type: " + id);
         };
     }
@@ -76,5 +77,29 @@ public sealed interface DialogueAction {
         static final String ID = "close";
         static final MapCodec<Close> CODEC = MapCodec.unit(Close::new);
         public String codecId() { return ID; }
+    }
+
+    /**
+     * Extension point for addons: runs a handler registered in {@link DialogueActionHandlers}
+     * (e.g. {@code fabledcompanions:hire}). The handler returns whether it succeeded; the dialogue then
+     * continues on {@code successPageId} or {@code failPageId}. A blank page id closes the dialogue.
+     *
+     * @param handlerId id the handler was registered under
+     * @param argument  free-form text passed to the handler (e.g. a contract id); may be empty
+     */
+    record Custom(ResourceLocation handlerId, String argument, String successPageId, String failPageId) implements DialogueAction {
+        static final String ID = "custom";
+        static final MapCodec<Custom> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
+                ResourceLocation.CODEC.fieldOf("handler").forGetter(Custom::handlerId),
+                Codec.STRING.optionalFieldOf("argument", "").forGetter(Custom::argument),
+                Codec.STRING.optionalFieldOf("success", "").forGetter(Custom::successPageId),
+                Codec.STRING.optionalFieldOf("fail", "").forGetter(Custom::failPageId)
+        ).apply(i, Custom::new));
+        public String codecId() { return ID; }
+
+        @Override
+        public List<String> targetPages() {
+            return List.of(successPageId, failPageId).stream().filter(p -> !p.isBlank()).toList();
+        }
     }
 }

@@ -50,7 +50,7 @@ public static final DeferredHolder<EntityType<?>, EntityType<NpcEntity>> MY_NPC 
 public static final DeferredRegister<NpcBehaviorType> BEHAVIORS =
         DeferredRegister.create(NpcRegistries.BEHAVIORS, "mymod");
 static {
-    BEHAVIORS.register("patrol", PatrolBehavior::new);
+  BEHAVIORS.register("patrol", PatrolBehavior::new);
 }
 ```
 
@@ -68,6 +68,20 @@ Server-synced config (`config/nexusnpc-server.toml`):
 | `allowHostileNpc` | true | Whether the hostile attitude is selectable |
 | `maxNpcsPerLevel` | 200 | Max NPCs per dimension (0 = unlimited) |
 | `requireOpPermission` | true | Require permission level 2 to create/edit NPCs |
+
+## NexusRPG integration (optional)
+
+NexusNPC works on its own. If [NexusRPG](https://github.com/TalesForge/NexusRPG) is installed too, NPCs get RPG
+settings stored in NexusRPG's profile, so every mod sees the same data:
+
+- editor fields `nexusnpc:faction`, `nexusnpc:classes`, `nexusnpc:team` (and a compact editor section);
+- attitude `nexusnpc:faction_based`: fights back when hit and attacks entities whose faction is an ENEMY of the NPC's.
+
+Without NexusRPG none of this exists (an NPC saved with the attitude falls back to the default one).
+All of it lives in the `compat.rpg` package; nothing else in NexusNPC may reference NexusRPG classes.
+
+Addons can also add their own dialogue actions (e.g. "Hire") with `DialogueActionHandlers.register(id, handler)`
+and `DialogueAction.Custom`; the server resolves them to a success or fail page.
 
 ## Status
 

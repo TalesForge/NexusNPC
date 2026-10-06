@@ -65,5 +65,12 @@
   "npc_behavior.nexusnpc.avoid_players": "Избегать игроков",
   "npc_behavior.nexusnpc.stay": "Стоять",
   "npc_behavior.nexusnpc.wander": "Бродить",
-  "npc_model.nexusnpc.humanoid": "Гуманоид"
+  "npc_model.nexusnpc.humanoid": "Гуманоид",
+
+  "gui.nexusnpc.faction": "Фракция",
+  "gui.nexusnpc.classes": "Классы (a, b, c)",
+  "gui.nexusnpc.team": "Команда",
+  "gui.nexusnpc.none": "Нет",
+  "npc_attitude.nexusnpc.faction_based": "По фракции",
+  "gui.nexusnpc.dialogue.action.custom": "Особое (аддон)"
 }

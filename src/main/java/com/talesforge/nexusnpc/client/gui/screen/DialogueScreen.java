@@ -37,7 +37,7 @@ public class DialogueScreen extends Screen {
             DialogueOption option = options.get(i);
             addRenderableWidget(Button.builder(Component.literal(option.text()), b -> {
                 PacketDistributor.sendToServer(new DialogueActionPayload(entityId, page.id(), index));
-                if (option.action() instanceof DialogueAction.Close) onClose();
+                if (option.action() instanceof DialogueAction.Close || option.action() instanceof DialogueAction.Custom) onClose();
             }).bounds(x, y, w, 20).build());
             y += 24;
         }

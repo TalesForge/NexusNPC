@@ -85,3 +85,11 @@ authors="TalesForge"
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+
+# NexusRPG (optional): when installed, NPCs get faction / classes / team settings
+[[dependencies.${mod_id}]]
+    modId="nexusrpg"
+    type="optional"
+    versionRange="[${nexusrpg_version},)"
+    ordering="AFTER"
+    side="BOTH"
