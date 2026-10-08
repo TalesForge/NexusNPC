@@ -1,7 +1,9 @@
 package com.talesforge.nexusnpc.client.gui.section.core;
 
 import com.talesforge.nexusnpc.NexusNPC;
+import com.talesforge.nexusnpc.client.gui.EditorSession;
 import com.talesforge.nexusnpc.client.gui.element.ValueSlider;
+import com.talesforge.nexusnpc.client.gui.section.NpcGuiContext;
 import com.talesforge.nexusnpc.client.gui.section.NpcGuiSection;
 import com.talesforge.nexusnpc.client.gui.section.NpcGuiSectionFactory;
 import com.talesforge.nexusnpc.npc.field.NpcDataMap;
@@ -21,34 +23,27 @@ import java.util.function.Consumer;
 public final class StatsSection implements NpcGuiSection {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "stats");
 
-    private double maxHealth, damage, speed;
+    private final EditorSession session;
 
-    private StatsSection(NpcDataMap initial) {
-        this.maxHealth = initial.get(NpcSettingFields.MAX_HEALTH);
-        this.damage = initial.get(NpcSettingFields.DAMAGE);
-        this.speed = initial.get(NpcSettingFields.SPEED);
-    }
+    private StatsSection(EditorSession session) { this.session = session; }
+
+    @Override
+    public Component title() { return Component.translatable("gui.nexusnpc.section.attributes"); }
 
     @Override
     public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
         addWidget.accept(new ValueSlider(x, y, width, 20, Component.translatable("gui.nexusnpc.health"),
-                1, 100, maxHealth, v -> this.maxHealth = v));
+                1, 100, session.get(NpcSettingFields.MAX_HEALTH), v -> session.set(NpcSettingFields.MAX_HEALTH, v)));
         addWidget.accept(new ValueSlider(x, y + 24, width, 20, Component.translatable("gui.nexusnpc.damage"),
-                0, 20, damage, v -> this.damage = v));
+                0, 20, session.get(NpcSettingFields.DAMAGE), v -> session.set(NpcSettingFields.DAMAGE, v)));
         addWidget.accept(new ValueSlider(x, y + 48, width, 20, Component.translatable("gui.nexusnpc.speed"),
-                0.05, 0.6, speed, 0.05, v -> this.speed = v));
-        return 72;
-    }
-
-    @Override
-    public void collect(NpcDataMap out) {
-        out.put(NpcSettingFields.MAX_HEALTH, maxHealth);
-        out.put(NpcSettingFields.DAMAGE, damage);
-        out.put(NpcSettingFields.SPEED, speed);
+                0.05, 0.6, session.get(NpcSettingFields.SPEED), 0.05, v -> session.set(NpcSettingFields.SPEED, v)));
+        return 70;
     }
 
     public static final class Factory implements NpcGuiSectionFactory {
         @Override public ResourceLocation id() { return ID; }
-        @Override public NpcGuiSection create(NpcDataMap initial) { return new StatsSection(initial); }
+        @Override public NpcGuiSection create(NpcDataMap initial) { return new StatsSection(EditorSession.local(initial)); }
+        @Override public NpcGuiSection create(NpcDataMap initial, NpcGuiContext context) { return new StatsSection(context.session()); }
     }
 }

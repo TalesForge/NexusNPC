@@ -24,7 +24,7 @@ import java.util.Optional;
  * Trade layout editor. The grid slots are "ghosts": they never hold or take real items,
  * they only remember WHICH item and how many. Clicking with a stack in hand copies it
  * into the slot and leaves the hand untouched, so nothing can be lost or duplicated.
- * The trades are applied to the NPC when the menu closes.
+ * Every change to the grid is applied to the NPC immediately.
  */
 public class TradeEditMenu extends AbstractContainerMenu {
     public static final int ROWS = 8;
@@ -33,7 +33,7 @@ public class TradeEditMenu extends AbstractContainerMenu {
     public static final int INV_Y = 18 + ROWS * 18 + 14;
 
     private final Mob npc;
-    private final Container tradeContainer;
+    private final SimpleContainer tradeContainer;
     private final ServerPlayer serverPlayer;
 
     public TradeEditMenu(int containerId, Inventory playerInv, Mob npc) {
@@ -42,6 +42,9 @@ public class TradeEditMenu extends AbstractContainerMenu {
         this.serverPlayer = playerInv.player instanceof ServerPlayer sp ? sp : null;
         this.tradeContainer = new SimpleContainer(GRID_SLOTS);
         if (serverPlayer != null) seedFrom(Npcs.trades(npc));  // The client gets it via slot sync
+
+        // Registered AFTER seeding, so loading the current trades does not count as a change
+        if (serverPlayer != null) tradeContainer.addListener(container -> saveTrades());
 
         for (int row = 0; row < ROWS; row++)
             for (int col = 0; col < COLS; col++)
@@ -120,6 +123,13 @@ public class TradeEditMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);  // Vanilla returns whatever the player holds in hand
+        saveTrades();           // Normally a no-op by now: every change was already saved as it happened
+        // The editing lock is intentionally NOT released here: the player usually returns to the
+        // settings screen, whose pings keep it alive. If they don't, it expires by itself in 5 s.
+    }
+
+    /** Writes the grid to the NPC. Called after EVERY change, so a crash or a disconnect never loses a trade. */
+    private void saveTrades() {
         if (serverPlayer == null) return;
 
         List<TradeOffer> offers = new ArrayList<>();
@@ -136,8 +146,6 @@ public class TradeEditMenu extends AbstractContainerMenu {
         }
         Npcs.attach(npc);  // Saving trades makes an ordinary mob an NPC (data only; the AI is untouched in VANILLA mode)
         Npcs.setTrades(npc, new NpcTrades(offers));
-        // The editing lock is intentionally NOT released here: the player usually returns to the
-        // settings screen, whose pings keep it alive. If they don't, it expires by itself in 5 s.
     }
 
     @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }

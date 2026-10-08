@@ -34,9 +34,12 @@ public final class EditorKeepAlive {
             int id = entityId;
             boolean connected = mc.getConnection() != null;
             stop();
+            EditorSession.endCurrent();   // Send the last unsaved changes BEFORE telling the server we are done
             if (connected) PacketDistributor.sendToServer(new EditorStatusPayload(id, true));
             return;
         }
+
+        EditorSession.tickCurrent();      // Autosave: sends pending changes once the player pauses
 
         if (++timer >= 20) {
             timer = 0;

@@ -102,3 +102,9 @@ versions until a 1.0 release.
 ## License
 
 See `LICENSE.txt`.
+
+## Editor UI
+
+- All editing screens are built on one responsive base (`PanelScreen`): the panel fits any window size or GUI scale and the content scrolls.
+- Choices (model, skin, attitude, behavior, AI mode, faction, dialogue action and target) open full picker screens with search.
+- Everything is saved as you go: sections write to an `EditorSession` (`session.set(FIELD, value)`), which sends the change to the server a moment later. Trades and dialogue pages are saved on every change too. Creating an NPC still uses the "Create" button.

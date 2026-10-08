@@ -1,5 +1,6 @@
 package com.talesforge.nexusnpc.network.handler;
 
+import com.talesforge.nexusnpc.client.gui.EditorSession;
 import com.talesforge.nexusnpc.client.gui.screen.DialogueScreen;
 import com.talesforge.nexusnpc.client.gui.screen.settings.NpcEditorScreen;
 import com.talesforge.nexusnpc.client.gui.screen.settings.SettingsScreen;
@@ -34,8 +35,9 @@ public class ClientPayloadHandler {
                         (type, s) -> PacketDistributor.sendToServer(new SaveNpcPayload(payload.entityId(), s))))
                 .orElseGet(() -> new NpcEditorScreen(
                         Component.translatable("gui.nexusnpc.editor.title"),
-                        payload.settings(), false, payload.entityId(), typeId,
-                        (type, s) -> PacketDistributor.sendToServer(new SaveNpcPayload(payload.entityId(), s))));
+                        // Autosaving session: every change is sent to the server as the player makes it
+                        EditorSession.open(payload.entityId(), typeId, payload.settings()),
+                        (type, s) -> {}));
         Minecraft.getInstance().setScreen(screen);
     }
 
@@ -54,7 +56,7 @@ public class ClientPayloadHandler {
                         (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))))
                 .orElseGet(() -> new NpcEditorScreen(
                         Component.translatable("gui.nexusnpc.creator.title"),
-                        creatorDefaults(), true, -1, typeId,
+                        EditorSession.forCreation(typeId, creatorDefaults()),
                         (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))));
         Minecraft.getInstance().setScreen(screen);
     }

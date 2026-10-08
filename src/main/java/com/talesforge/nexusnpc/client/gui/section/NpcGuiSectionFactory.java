@@ -15,9 +15,9 @@ public interface NpcGuiSectionFactory {
     NpcGuiSection create(NpcDataMap initial);
 
     /**
-     * Same as {@link #create(NpcDataMap)}, but also tells the section which NPC it belongs to.
-     * Override this only if the section needs it (e.g. it opens a server-side menu for the
-     * NPC); by default the context is ignored.
+     * Same as {@link #create(NpcDataMap)}, but also tells the section which NPC it belongs to and gives it the
+     * {@link NpcGuiContext#session() session} to write changes to. Core sections override this one; an addon
+     * section that only reads {@code initial} and implements {@code collect} can keep overriding the first.
      */
     default NpcGuiSection create(NpcDataMap initial, NpcGuiContext context) {
         return create(initial);

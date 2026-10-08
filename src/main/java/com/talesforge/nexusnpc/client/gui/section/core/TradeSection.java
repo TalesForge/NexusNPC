@@ -20,8 +20,8 @@ import java.util.function.Consumer;
 
 /**
  * Trades are not part of NpcDataMap: laying them out needs real item slots, which only a
- * container menu can provide. The button asks the server to open TradeEditMenu for this NPC.
- * Hidden while creating: a not-yet-spawned NPC has no entity id to open a menu for.
+ * container menu can provide. The button asks the server to open TradeEditMenu for this NPC (which saves every
+ * change as it happens). Hidden while creating: a not-yet-spawned NPC has no entity id to open a menu for.
  */
 public final class TradeSection implements NpcGuiSection {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "trade");
@@ -29,6 +29,9 @@ public final class TradeSection implements NpcGuiSection {
     private final int entityId;
 
     private TradeSection(int entityId) { this.entityId = entityId; }
+
+    @Override
+    public Component title() { return Component.translatable("gui.nexusnpc.section.trade"); }
 
     @Override
     public int build(int x, int y, int width, Font font, Consumer<AbstractWidget> addWidget, Runnable requestRebuild) {
@@ -42,10 +45,8 @@ public final class TradeSection implements NpcGuiSection {
                 .bounds(x, y, width, 20)
                 .tooltip(Tooltip.create(Component.translatable("gui.nexusnpc.trade.edit.tooltip")))
                 .build());
-        return 24;
+        return 22;
     }
-
-    @Override public void collect(NpcDataMap out) {}  // Nothing: trades don't travel through NpcDataMap
 
     public static final class Factory implements NpcGuiSectionFactory {
         @Override public ResourceLocation id() { return ID; }

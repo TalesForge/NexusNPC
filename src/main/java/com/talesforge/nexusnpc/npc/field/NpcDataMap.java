@@ -10,9 +10,12 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Open, extensible replacement for the old fixed {@code NpcSettings} record.
@@ -74,6 +77,35 @@ public final class NpcDataMap {
         values.put(field.id(), field.get(npc));
     }
 
+    public boolean isEmpty() { return values.isEmpty(); }
+
+    public void clear() { values.clear(); }
+
+    public NpcDataMap copy() {
+        NpcDataMap copy = new NpcDataMap();
+        copy.values.putAll(values);
+        return copy;
+    }
+
+    /** Ids of every field present in this map. */
+    public Set<ResourceLocation> keys() { return Set.copyOf(values.keySet()); }
+
+    @Nullable
+    public Object raw(ResourceLocation id) { return values.get(id); }
+
+    public void putRaw(ResourceLocation id, Object value) { values.put(id, value); }
+
+    /**
+     * Stores the value and returns true only if it differs from what was there — the editor uses this so that
+     * re-applying an unchanged value never produces a network packet.
+     */
+    public <T> boolean putIfChanged(NpcSettingField<T> field, T value) {
+        Object old = values.get(field.id());
+        if (Objects.equals(old, value)) return false;
+        values.put(field.id(), value);
+        return true;
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T get(NpcSettingField<T> field) {
         Object value = values.get(field.id());
@@ -115,7 +147,7 @@ public final class NpcDataMap {
         if (refreshAi) NpcAi.apply(npc);
 
         // Read back what is actually stored, so "it did not save" is visible in the log with numbers
-        NexusNPC.LOGGER.info("Applied NPC settings to {} (npc={}, dialogue pages={}, quests={}, trades={}, aiMode={})",
+        NexusNPC.LOGGER.debug("Applied NPC settings to {} (npc={}, dialogue pages={}, quests={}, trades={}, aiMode={})",
                 npc.getType(), Npcs.isNpc(npc), Npcs.dialogue(npc).pages().size(),
                 Npcs.quests(npc).quests().size(), Npcs.trades(npc).offers().size(), Npcs.aiMode(npc));
 

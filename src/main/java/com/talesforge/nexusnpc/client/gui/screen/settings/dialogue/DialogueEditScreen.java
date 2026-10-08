@@ -2,30 +2,40 @@ package com.talesforge.nexusnpc.client.gui.screen.settings.dialogue;
 
 import com.talesforge.nexusnpc.NexusNPC;
 import com.talesforge.nexusnpc.client.gui.NpcEditingScreen;
-import com.talesforge.nexusnpc.client.gui.screen.CustomScreen;
 import com.talesforge.nexusnpc.client.gui.screen.PagePickerScreen;
+import com.talesforge.nexusnpc.client.gui.ui.Heading;
+import com.talesforge.nexusnpc.client.gui.ui.PanelScreen;
+import com.talesforge.nexusnpc.client.gui.ui.PickerScreen;
+import com.talesforge.nexusnpc.client.gui.ui.ScrollPanel;
 import com.talesforge.nexusnpc.npc.dialogue.DialogueAction;
 import com.talesforge.nexusnpc.npc.dialogue.DialogueOption;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
 import com.talesforge.nexusnpc.npc.dialogue.NpcDialogue;
-import com.talesforge.nexusnpc.npc.field.NpcDataMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.*;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.MultiLineEditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Edits ONE dialogue page: name, text and up to four answers. Where an answer leads is
- * picked from {@code linkTargets} (by name), not typed.
- * The source of truth is the draft below, not the widgets, so nothing typed is lost when the
- * screen is resized or a picker screen returns here.
+ * Edits ONE dialogue page: name, text and up to four answers. Where an answer leads, and what it does, are chosen
+ * on picker screens, not typed.
+ * <p>
+ * The page is saved AS YOU TYPE: every few ticks the draft is compared with what was last handed over and, if it
+ * changed, passed to {@code onDone}. "Done" (and Esc) simply close; "Cancel" restores the dialogue as it was when this
+ * screen opened. The draft lives in fields (updated by the widgets' listeners), so a resize or a picker screen
+ * never loses anything.
  */
-public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen {
+public class DialogueEditScreen extends PanelScreen implements NpcEditingScreen {
     private static final int MAX_OPTIONS = 4;
+    private static final int AUTOSAVE_INTERVAL = 10;   // ticks
 
     private enum Kind { GOTO, OPEN_TRADE, ACCEPT_QUEST, TURN_IN_QUEST, CLOSE, CUSTOM }
 
@@ -38,28 +48,25 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
         DialogueAction.Custom custom;  // Addon action: only preserved, never created in this GUI
     }
 
-    private final NpcDialogue dialogue;
+    private final NpcDialogue dialogue;          // The dialogue as it was when this screen opened
     private final Consumer<NpcDialogue> onDone;
 
     /**
-     * The pool of pages a GOTO/accept/turn-in option can point at. For a page that's part of
-     * an NPC's own dialogue (DialogueListScreen) this is just {@code dialogue.pages()} — see
-     * the 4-arg constructor. A page edited from the standalone LIBRARY instead needs the
-     * whole library as its target pool, since {@code dialogue} there is only ever a
-     * throwaway single-page wrapper (see DialogueLibraryScreen#edit), not the real set of
-     * valid link targets.
+     * The pool of pages an option can point at. For a page that is part of an NPC's own dialogue this is just
+     * {@code dialogue.pages()}; a page edited from the standalone LIBRARY needs the whole library instead, since
+     * {@code dialogue} there is only a throwaway single-page wrapper.
      */
     private final List<DialoguePage> linkTargets;
 
     private final String pageId;
+    private final boolean isNew;
+    private final String defaultName;
     private String name;
     private String text;
     private final OptionDraft[] options = new OptionDraft[MAX_OPTIONS];
 
-    private EditBox nameBox;
-    private MultiLineEditBox textBox;
-    private final EditBox[] optionText = new EditBox[MAX_OPTIONS];
-    private final EditBox[] questBox = new EditBox[MAX_OPTIONS];
+    @Nullable private DialoguePage lastHandedOver;
+    private int autosaveTimer = 0;
 
     /** @param editing the page to edit, or null to create a new one. Link targets default to the dialogue's own pages. */
     public DialogueEditScreen(Screen parent, NpcDialogue dialogue, DialoguePage editing, Consumer<NpcDialogue> onDone) {
@@ -69,109 +76,143 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
     /** @param editing the page to edit, or null to create a new one */
     public DialogueEditScreen(Screen parent, NpcDialogue dialogue, DialoguePage editing,
                               Consumer<NpcDialogue> onDone, List<DialoguePage> linkTargets) {
-        super(Component.translatable("gui.nexusnpc.dialogue.title"), parent, NpcDataMap.empty());
+        super(Component.translatable("gui.nexusnpc.dialogue.title"), parent);
         this.dialogue = dialogue;
         this.onDone = onDone;
         this.linkTargets = linkTargets;
+        this.isNew = editing == null;
         this.pageId = editing != null ? editing.id() : dialogue.freshId();
         this.name = editing != null ? editing.name() : "";
         this.text = editing != null ? editing.text() : "";
+        this.lastHandedOver = editing;
         for (int i = 0; i < MAX_OPTIONS; i++) {
             options[i] = editing != null && i < editing.options().size()
                     ? draftOf(editing.options().get(i)) : new OptionDraft();
         }
+        // Counted against linkTargets (the real pool), not `dialogue`, which in library mode only wraps the page being edited
+        int number = linkTargets.size() + (dialogue.page(pageId) == null ? 1 : 0);
+        this.defaultName = Component.translatable("gui.nexusnpc.dialogue.default_name", number).getString();
     }
 
+    @Override protected int maxPanelWidth() { return 340; }
+
+    @Override protected int maxPanelHeight() { return 440; }
+
+    // ================= layout =================
+
     @Override
-    protected void init() {
-        if (nameBox != null) syncDraft();  // Resized, or came back from a picker: keep what was typed
-        Arrays.fill(questBox, null);
+    protected int buildBody(ScrollPanel body, int x, int w) {
+        int y = 0;
 
-        int w = 340;
-        int x = width / 2 - w / 2;
-
-        nameBox = new EditBox(font, x, 6, w - 144, 20, Component.translatable("gui.nexusnpc.dialogue.name"));
+        body.add(new Heading(x, y, w, Component.translatable("gui.nexusnpc.dialogue.name")));
+        y += Heading.HEIGHT + 2;
+        EditBox nameBox = new EditBox(font, x, y, w, 20, Component.translatable("gui.nexusnpc.dialogue.name"));
         nameBox.setHint(Component.translatable("gui.nexusnpc.dialogue.name"));
         nameBox.setMaxLength(48);
         nameBox.setValue(name);
-        addRenderableWidget(nameBox);
+        nameBox.setResponder(v -> name = v);
+        body.add(nameBox);
+        y += 28;
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(x + w - 140, 6, 68, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> finish())
-                .bounds(x + w - 70, 6, 70, 20).build());
-
-        textBox = new MultiLineEditBox(font, x, 30, w, 44,
+        body.add(new Heading(x, y, w, Component.translatable("gui.nexusnpc.dialogue.text")));
+        y += Heading.HEIGHT + 2;
+        MultiLineEditBox textBox = new MultiLineEditBox(font, x, y, w, 64,
                 Component.translatable("gui.nexusnpc.dialogue.text"), Component.translatable("gui.nexusnpc.dialogue.text"));
         textBox.setValue(text);
-        addRenderableWidget(textBox);
+        textBox.setValueListener(v -> text = v);   // After setValue, so building does not count as an edit
+        body.add(textBox);
+        y += 72;
 
-        for (int i = 0; i < MAX_OPTIONS; i++) buildOption(i, x, 80 + i * 44, w);
+        for (int i = 0; i < MAX_OPTIONS; i++) {
+            body.add(new Heading(x, y, w, Component.translatable("gui.nexusnpc.dialogue.answer", i + 1)));
+            y += Heading.HEIGHT + 2;
+            y += buildOption(body, i, x, y, w) + 8;
+        }
+        return y;
     }
 
-    private void buildOption(int i, int x, int y, int w) {
+    /** @return the height used */
+    private int buildOption(ScrollPanel body, int i, int x, int y, int w) {
         OptionDraft d = options[i];
+        int start = y;
 
         EditBox answer = new EditBox(font, x, y, w, 20, Component.translatable("gui.nexusnpc.dialogue.option_hint"));
         answer.setHint(Component.translatable("gui.nexusnpc.dialogue.option_hint"));
         answer.setMaxLength(80);
         answer.setValue(d.text);
-        optionText[i] = answer;
-        addRenderableWidget(answer);
+        answer.setResponder(v -> d.text = v);
+        body.add(answer);
+        y += 24;
 
-        int rowB = y + 22;
-        addRenderableWidget(CycleButton.<Kind>builder(
-                        k -> Component.translatable("gui.nexusnpc.dialogue.action." + k.name().toLowerCase(Locale.ROOT)))
-                .withValues(kindsFor(d))
-                .withInitialValue(d.kind)
-                .displayOnlyValue()
-                .create(x, rowB, 100, 20, Component.empty(), (button, value) -> {
-                    syncDraft();
-                    d.kind = value;
-                    clearWidgets();
-                    init();  // Different action -> different controls on the second row
-                }));
+        body.add(PickerScreen.openerButton(x, y, w, Component.translatable("gui.nexusnpc.dialogue.action"),
+                kindName(d.kind), () -> pickKind(d)));
+        y += 24;
 
-        int bx = x + 102;
-        int rest = w - 102;
         switch (d.kind) {
-            case GOTO -> addPageButton(i, false, "→ ", bx, rowB, rest);
+            case GOTO -> {
+                body.add(pageButton(x, y, w, "gui.nexusnpc.dialogue.leads_to", d, false));
+                y += 24;
+            }
             case ACCEPT_QUEST -> {
-                addQuestBox(i, bx, rowB, 84);
-                addPageButton(i, false, "→ ", bx + 86, rowB, rest - 86);
+                body.add(questBox(x, y, w, d));
+                y += 24;
+                body.add(pageButton(x, y, w, "gui.nexusnpc.dialogue.after_accept", d, false));
+                y += 24;
             }
             case TURN_IN_QUEST -> {
-                addQuestBox(i, bx, rowB, 76);
-                int pw = (rest - 78 - 2) / 2;
-                addPageButton(i, false, "✓ ", bx + 78, rowB, pw);
-                addPageButton(i, true, "✗ ", bx + 78 + pw + 2, rowB, pw);
+                body.add(questBox(x, y, w, d));
+                y += 24;
+                body.add(pageButton(x, y, w, "gui.nexusnpc.dialogue.on_success", d, false));
+                y += 24;
+                body.add(pageButton(x, y, w, "gui.nexusnpc.dialogue.on_failure", d, true));
+                y += 24;
             }
-            default -> {}  // OPEN_TRADE and CLOSE need no parameters
+            default -> {}  // OPEN_TRADE, CLOSE and CUSTOM need no parameters
         }
+        return y - start - 4;
     }
 
-    private void addQuestBox(int i, int bx, int by, int bw) {
-        EditBox box = new EditBox(font, bx, by, bw, 20, Component.translatable("gui.nexusnpc.dialogue.quest_hint"));
+    private EditBox questBox(int x, int y, int w, OptionDraft d) {
+        EditBox box = new EditBox(font, x, y, w, 20, Component.translatable("gui.nexusnpc.dialogue.quest_hint"));
         box.setHint(Component.translatable("gui.nexusnpc.dialogue.quest_hint"));
         box.setMaxLength(64);
-        box.setValue(options[i].quest);
-        questBox[i] = box;
-        addRenderableWidget(box);
+        box.setValue(d.quest);
+        box.setResponder(v -> d.quest = v);
+        return box;
     }
 
-    private void addPageButton(int i, boolean second, String prefix, int bx, int by, int bw) {
-        OptionDraft d = options[i];
+    private Button pageButton(int x, int y, int w, String labelKey, OptionDraft d, boolean second) {
         String full = pageName(second ? d.pageB : d.pageA);
-        String shown = font.plainSubstrByWidth(full, bw - 12 - font.width(prefix));
-        addRenderableWidget(Button.builder(Component.literal(prefix + shown), b -> pickPage(i, second))
-                .bounds(bx, by, bw, 20)
-                .tooltip(Tooltip.create(Component.literal(full)))
-                .build());
+        Button button = PickerScreen.openerButton(x, y, w, Component.translatable(labelKey), Component.literal(full),
+                () -> pickPage(d, second));
+        button.setTooltip(Tooltip.create(Component.literal(full)));
+        return button;
     }
 
-    private void pickPage(int i, boolean second) {
-        syncDraft();
-        OptionDraft d = options[i];
+    @Override
+    protected void buildFooter(int x, int y, int width) {
+        int half = (width - 4) / 2;
+        footerButton(Component.translatable("gui.cancel"), x, y, half, b -> cancel());
+        footerButton(Component.translatable("gui.done"), x + half + 4, y, width - half - 4, b -> onClose());
+    }
+
+    // ================= pickers =================
+
+    private static Component kindName(Kind kind) {
+        return Component.translatable("gui.nexusnpc.dialogue.action." + kind.name().toLowerCase(Locale.ROOT));
+    }
+
+    private void pickKind(OptionDraft d) {
+        List<PickerScreen.Entry<Kind>> entries = new ArrayList<>();
+        for (Kind kind : kindsFor(d)) {
+            entries.add(new PickerScreen.Entry<>(kind, kindName(kind),
+                    Component.translatable("gui.nexusnpc.dialogue.action." + kind.name().toLowerCase(Locale.ROOT) + ".desc"), null));
+        }
+        Minecraft.getInstance().setScreen(new PickerScreen<>(this, Component.translatable("gui.nexusnpc.dialogue.action"),
+                entries, d.kind, picked -> d.kind = picked));   // This screen re-lays itself out when the picker returns
+    }
+
+    private void pickPage(OptionDraft d, boolean second) {
         String current = second ? d.pageB : d.pageA;
         Minecraft.getInstance().setScreen(new PagePickerScreen(this, names(), current, picked -> {
             if (second) d.pageB = picked; else d.pageA = picked;
@@ -182,7 +223,7 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
     private Map<String, String> names() {
         Map<String, String> map = new LinkedHashMap<>();
         for (DialoguePage p : linkTargets) map.put(p.id(), p.displayName());
-        map.put(pageId, name.isBlank() ? pageId : name.trim());
+        map.put(pageId, name.isBlank() ? defaultName : name.trim());
         return map;
     }
 
@@ -191,40 +232,47 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
         return names().getOrDefault(id, "?");
     }
 
-    /** Widgets -> draft. Page choices and kinds live only in the draft, so they are not touched here. */
-    private void syncDraft() {
-        name = nameBox.getValue();
-        text = textBox.getValue();
-        for (int i = 0; i < MAX_OPTIONS; i++) {
-            options[i].text = optionText[i].getValue();
-            if (questBox[i] != null) options[i].quest = questBox[i].getValue();
-        }
-    }
+    // ================= saving =================
 
-    private void finish() {
-        syncDraft();
+    private DialoguePage buildPage() {
         List<DialogueOption> built = new ArrayList<>();
         for (OptionDraft d : options) {
-            // Add Options
             String t = d.text.trim();
             if (!t.isEmpty()) built.add(new DialogueOption(t, actionOf(d)));
         }
-        String finalName = name.trim();
-        if (finalName.isEmpty()) {
-            // Default Name — counted against linkTargets (the real pool: the NPC's dialogue,
-            // or the whole library), not `dialogue`, which in library mode only ever wraps
-            // the single page being edited and would always number everything "1".
-            int number = linkTargets.size() + (dialogue.page(pageId) == null ? 1 : 0);
-            finalName = Component.translatable("gui.nexusnpc.dialogue.default_name", number).getString();
-        }
-        onDone.accept(dialogue.withPage(new DialoguePage(pageId, finalName, text, built)));  // Add New / Replace
-
-        Minecraft.getInstance().setScreen(parent);
+        String finalName = name.trim().isEmpty() ? defaultName : name.trim();
+        return new DialoguePage(pageId, finalName, text, built);
     }
 
-    /** Esc / Cancel: back to the list without saving this dialogue. */
+    /** Hand the draft over if it changed since the last time. A brand-new page that is still blank is not created yet. */
+    private void commitIfChanged() {
+        DialoguePage page = buildPage();
+        boolean blank = name.isBlank() && text.isBlank() && page.options().isEmpty();
+        if (isNew && lastHandedOver == null && blank) return;
+        if (page.equals(lastHandedOver)) return;
+        lastHandedOver = page;
+        onDone.accept(dialogue.withPage(page));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (++autosaveTimer >= AUTOSAVE_INTERVAL) {
+            autosaveTimer = 0;
+            commitIfChanged();
+        }
+    }
+
+    /** Done / Esc: keep everything. */
     @Override
     public void onClose() {
+        commitIfChanged();
+        super.onClose();
+    }
+
+    /** Cancel: put the dialogue back the way it was when this screen opened. */
+    private void cancel() {
+        if (lastHandedOver != null || !isNew) onDone.accept(dialogue);
         Minecraft.getInstance().setScreen(parent);
     }
 
@@ -277,5 +325,4 @@ public class DialogueEditScreen extends CustomScreen implements NpcEditingScreen
         return id != null ? id : ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "quest");
     }
 
-    @Override public boolean isPauseScreen() { return true; }
 }

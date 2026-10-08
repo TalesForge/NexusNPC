@@ -44,7 +44,7 @@ public class TradeEditScreen extends AbstractContainerScreen<TradeEditMenu> impl
     @Override
     protected void init() {
         super.init();
-        addRenderableWidget(Button.builder(Component.translatable("gui.nexusnpc.done"), b -> onClose())
+        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(leftPos + MAIN_W + GAP + 6, topPos + SIDE_H - 26, SIDE_W - 12, 20)
                 .build());
     }
