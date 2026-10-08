@@ -1,7 +1,13 @@
 package com.talesforge.nexusnpc.api;
 
 import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.field.NpcDataMap;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.neoforged.neoforge.event.EventHooks;
 import com.talesforge.nexusnpc.npc.model.NpcModelSkins;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -77,19 +83,54 @@ public final class NexusNpcApi {
 //                .toList();
 //    }
 
-    /** Spawn an NPC by type id. Returns null if the type is not registered via the API. */
+    /**
+     * Spawn an NPC by entity type id. The type can be one registered through {@link #registerType} OR any
+     * ordinary mob type (e.g. {@code minecraft:cow}) that the config allows. Returns null if the id is
+     * unknown, is not a mob, or is not allowed to become an NPC.
+     */
     @Nullable
-    public static NpcEntity spawn(ResourceLocation typeId, ServerLevel level, Vec3 pos,
-                                  float yRot, NpcDataMap settings) {
-        NpcTypeEntry entry = TYPES.stream().filter(e -> e.id().equals(typeId)).findFirst().orElse(null);
-        if (entry == null) return null;
+    public static Mob spawn(ResourceLocation typeId, ServerLevel level, Vec3 pos,
+                            float yRot, NpcDataMap settings) {
+        EntityType<?> type = TYPES.stream().filter(e -> e.id().equals(typeId))
+                .<EntityType<?>>map(e -> e.type().get()).findFirst()
+                .orElseGet(() -> BuiltInRegistries.ENTITY_TYPE.getOptional(typeId).orElse(null));
+        if (type == null || !Npcs.isEligible(type)) return null;
 
-        NpcEntity npc = entry.type().get().create(level);
-        if (npc == null) return null;
+        Entity created = type.create(level);
+        if (!(created instanceof Mob mob)) {
+            if (created != null) created.discard();
+            return null;
+        }
 
-        npc.moveTo(pos.x, pos.y, pos.z, yRot, 0.0F);
-        npc.applySettings(settings, true);
-        level.addFreshEntity(npc);
-        return npc;
+        mob.moveTo(pos.x, pos.y, pos.z, yRot, 0.0F);
+        if (!(mob instanceof NpcEntity)) {
+            // Ordinary mobs get their normal spawn setup (equipment, variants, baby chance...)
+            EventHooks.finalizeMobSpawn(mob, level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.COMMAND, null);
+        }
+        applySettings(mob, settings, true);
+        level.addFreshEntity(mob);
+        return mob;
     }
+
+    // ===== Working with ANY mob =====
+
+    /** True if the entity is a mob that currently carries NPC data. */
+    public static boolean isNpc(@Nullable Entity entity) { return Npcs.isNpc(entity); }
+
+    /** Turn an ordinary mob into an NPC (idempotent). Server side. */
+    public static void makeNpc(Mob mob) { Npcs.enable(mob); }
+
+    /** Strip every NPC feature from the mob, leaving an ordinary one. Server side. */
+    public static void removeNpc(Mob mob) { Npcs.disable(mob); }
+
+    /** Snapshot of every registered setting field that applies to this mob — core AND addon fields alike. */
+    public static NpcDataMap getSettings(Mob mob) { return NpcDataMap.capture(mob); }
+
+    /**
+     * Apply settings (server only). Also turns the mob into an NPC if it is not one yet. Iterates every registered
+     * field present in {@code data}, so an addon field arrives here exactly like a core one.
+     *
+     * @param heal whether to heal the mob to its (new) maximum afterwards (true when created).
+     */
+    public static void applySettings(Mob mob, NpcDataMap data, boolean heal) { data.applyAll(mob, heal); }
 }

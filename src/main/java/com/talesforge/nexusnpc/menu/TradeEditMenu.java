@@ -1,6 +1,8 @@
 package com.talesforge.nexusnpc.menu;
 
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import com.talesforge.nexusnpc.npc.Npcs;
+import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
+import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.npc.trade.NpcTrades;
 import com.talesforge.nexusnpc.npc.trade.TradeOffer;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,16 +32,16 @@ public class TradeEditMenu extends AbstractContainerMenu {
     public static final int GRID_SLOTS = ROWS * COLS;
     public static final int INV_Y = 18 + ROWS * 18 + 14;
 
-    private final NpcEntity npc;
+    private final Mob npc;
     private final Container tradeContainer;
     private final ServerPlayer serverPlayer;
 
-    public TradeEditMenu(int containerId, Inventory playerInv, NpcEntity npc) {
+    public TradeEditMenu(int containerId, Inventory playerInv, Mob npc) {
         super(ModMenus.TRADE_EDIT.get(), containerId);
         this.npc = npc;
         this.serverPlayer = playerInv.player instanceof ServerPlayer sp ? sp : null;
         this.tradeContainer = new SimpleContainer(GRID_SLOTS);
-        if (serverPlayer != null) seedFrom(npc.getTrades());  // The client gets it via slot sync
+        if (serverPlayer != null) seedFrom(Npcs.trades(npc));  // The client gets it via slot sync
 
         for (int row = 0; row < ROWS; row++)
             for (int col = 0; col < COLS; col++)
@@ -111,8 +113,8 @@ public class TradeEditMenu extends AbstractContainerMenu {
     public void broadcastChanges() {
         super.broadcastChanges();
         if (serverPlayer == null) return;
-        if (npc.isEditedBy(serverPlayer)) npc.editorPing();
-        else if (!npc.tryStartEditing(serverPlayer)) serverPlayer.closeContainer();  // Someone else took it
+        if (NpcEditing.isEditedBy(npc, serverPlayer)) NpcEditing.ping(npc);
+        else if (!NpcEditing.tryStart(npc, serverPlayer)) serverPlayer.closeContainer();  // Someone else took it
     }
 
     @Override
@@ -132,7 +134,8 @@ public class TradeEditMenu extends AbstractContainerMenu {
                     cost2.isEmpty() ? Optional.empty() : Optional.of(new ItemCost(cost2.getItem(), cost2.getCount())),
                     result.copy()));
         }
-        npc.setTrades(new NpcTrades(offers));
+        Npcs.attach(npc);  // Saving trades makes an ordinary mob an NPC (data only; the AI is untouched in VANILLA mode)
+        Npcs.setTrades(npc, new NpcTrades(offers));
         // The editing lock is intentionally NOT released here: the player usually returns to the
         // settings screen, whose pings keep it alive. If they don't, it expires by itself in 5 s.
     }
@@ -141,7 +144,7 @@ public class TradeEditMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return npc.isAlive() && player.distanceToSqr(npc) <= NpcEntity.EDITOR_MAX_DIST_SQ;
+        return npc.isAlive() && player.distanceToSqr(npc) <= NpcEditing.MAX_DIST_SQ;
     }
 
     private static final class GhostSlot extends Slot {

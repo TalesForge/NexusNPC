@@ -7,9 +7,13 @@ import com.talesforge.nexusnpc.entity.custom.NpcEntity;
 import com.talesforge.nexusnpc.npc.NpcRegistries;
 import com.talesforge.nexusnpc.npc.model.NpcModelType;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
 import net.neoforged.neoforge.event.entity.EntityEvent;
 
 @EventBusSubscriber(modid = NexusNPC.MOD_ID)
@@ -18,6 +22,19 @@ public class ModEventBusEvents {
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         for (NpcTypeEntry entry : NexusNpcApi.types()) {
             event.put(entry.type().get(), entry.attributes().get().build());
+        }
+    }
+
+    /**
+     * Vanilla mobs can become NPCs, and NPC goals (melee attitudes) and the stat editor need ATTACK_DAMAGE.
+     * A cow, for example, has none, so add it with a harmless default. Existing attributes are never touched.
+     */
+    @SubscribeEvent
+    public static void extendAttributes(EntityAttributeModificationEvent event) {
+        for (EntityType<? extends LivingEntity> type : event.getTypes()) {
+            if (!event.has(type, Attributes.ATTACK_DAMAGE)) {
+                event.add(type, Attributes.ATTACK_DAMAGE, 2.0D);
+            }
         }
     }
 

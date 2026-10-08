@@ -115,6 +115,13 @@ public class DialogueListScreen extends CustomScreen implements NpcEditingScreen
                 .bounds(x, by, w, BUTTON_HEIGHT).build());
     }
 
+    /** Whatever way the screen is left (Done, Esc), the editor section gets the final dialogue. */
+    @Override
+    public void onClose() {
+        onDone.accept(dialogue);
+        super.onClose();
+    }
+
     @Override
     protected void rebuild() {
         super.rebuild();
@@ -127,6 +134,7 @@ public class DialogueListScreen extends CustomScreen implements NpcEditingScreen
                 dialogue = dialogue.withPage(picked);
             }
             status = Component.empty();
+            onDone.accept(dialogue);
         }));
     }
 
@@ -134,6 +142,7 @@ public class DialogueListScreen extends CustomScreen implements NpcEditingScreen
         openChild(new DialogueEditScreen(this, dialogue, page, updated -> {
             this.dialogue = updated;
             this.status = Component.empty();
+            onDone.accept(updated);  // Hand the result to the editor section right away, not only on rebuild()
         }));
     }
 

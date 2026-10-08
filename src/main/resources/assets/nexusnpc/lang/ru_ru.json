@@ -66,11 +66,15 @@
   "npc_behavior.nexusnpc.stay": "Стоять",
   "npc_behavior.nexusnpc.wander": "Бродить",
   "npc_model.nexusnpc.humanoid": "Гуманоид",
-
   "gui.nexusnpc.faction": "Фракция",
   "gui.nexusnpc.classes": "Классы (a, b, c)",
   "gui.nexusnpc.team": "Команда",
   "gui.nexusnpc.none": "Нет",
   "npc_attitude.nexusnpc.faction_based": "По фракции",
-  "gui.nexusnpc.dialogue.action.custom": "Особое (аддон)"
+  "gui.nexusnpc.dialogue.action.custom": "Особое (аддон)",
+  "gui.nexusnpc.ai_mode": "ИИ",
+  "gui.nexusnpc.ai_mode.vanilla": "Ванильный",
+  "gui.nexusnpc.ai_mode.override": "NPC",
+  "gui.nexusnpc.ai_mode.vanilla.tooltip": "Моб сохраняет свой ИИ. Отношение и поведение игнорируются.",
+  "gui.nexusnpc.ai_mode.override.tooltip": "Отношение и поведение заменяют ИИ моба. Не работает для мобов на Brain (жители, пиглины...)."
 }

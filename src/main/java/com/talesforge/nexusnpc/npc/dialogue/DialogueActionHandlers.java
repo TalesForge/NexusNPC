@@ -1,6 +1,6 @@
 package com.talesforge.nexusnpc.npc.dialogue;
 
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +17,7 @@ public final class DialogueActionHandlers {
     @FunctionalInterface
     public interface Handler {
         /** @return true on success (dialogue goes to the success page), false otherwise (fail page). */
-        boolean handle(ServerPlayer player, NpcEntity npc, DialogueAction.Custom action);
+        boolean handle(ServerPlayer player, Mob npc, DialogueAction.Custom action);
     }
 
     private static final Map<ResourceLocation, Handler> HANDLERS = new LinkedHashMap<>();

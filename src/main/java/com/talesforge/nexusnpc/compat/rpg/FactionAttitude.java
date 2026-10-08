@@ -1,7 +1,7 @@
 package com.talesforge.nexusnpc.compat.rpg;
 
 import com.talesforge.nexusnpc.config.Config;
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import com.talesforge.nexusnpc.npc.attitude.NeutralAttitude;
 import com.talesforge.nexusrpg.api.NexusRPGApi;
 import com.talesforge.nexusrpg.api.faction.Relation;
@@ -17,7 +17,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
  */
 public class FactionAttitude extends NeutralAttitude {
     @Override
-    public void createTargetGoals(NpcEntity npc, GoalSelector targets) {
+    public void createTargetGoals(PathfinderMob npc, GoalSelector targets) {
         super.createTargetGoals(npc, targets);
         targets.addGoal(2, new NearestAttackableTargetGoal<>(npc, LivingEntity.class, 10, true, false,
                 target -> target != npc && NexusRPGApi.profiles().relation(npc, target) == Relation.ENEMY));

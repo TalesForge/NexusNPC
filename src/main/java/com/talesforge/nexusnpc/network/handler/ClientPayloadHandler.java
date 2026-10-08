@@ -11,7 +11,9 @@ import com.talesforge.nexusnpc.network.payload.screen.OpenCreatorPayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenSettingsPayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenDialoguePayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenEditorPayload;
+import com.talesforge.nexusnpc.npc.data.NpcAiMode;
 import com.talesforge.nexusnpc.npc.field.NpcDataMap;
+import com.talesforge.nexusnpc.npc.field.NpcSettingFields;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -48,13 +50,20 @@ public class ClientPayloadHandler {
         Screen screen = NpcGuiRegistry.screenOverride(typeId)
                 .<Screen>map(factory -> factory.create(
                         Component.translatable("gui.nexusnpc.creator.title"),
-                        NpcDataMap.defaults(), true, -1, typeId,
+                        creatorDefaults(), true, -1, typeId,
                         (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))))
                 .orElseGet(() -> new NpcEditorScreen(
                         Component.translatable("gui.nexusnpc.creator.title"),
-                        NpcDataMap.defaults(), true, -1, typeId,
+                        creatorDefaults(), true, -1, typeId,
                         (type, s) -> PacketDistributor.sendToServer(new CreateNpcPayload(payload.pos(), type, s))));
         Minecraft.getInstance().setScreen(screen);
+    }
+
+    /** New NPCs of NexusNPC's own types keep the classic behavior: their attitude/behavior goals drive them. */
+    private static NpcDataMap creatorDefaults() {
+        NpcDataMap defaults = NpcDataMap.defaults();
+        defaults.put(NpcSettingFields.AI_MODE, NpcAiMode.OVERRIDE);
+        return defaults;
     }
 
     public static void openSettings(OpenSettingsPayload payload, IPayloadContext context) {

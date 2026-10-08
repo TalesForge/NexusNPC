@@ -1,18 +1,18 @@
 package com.talesforge.nexusnpc.api.event;
 
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.neoforged.bus.api.Event;
 
-/** This is called at the end of registerGoals(), including with each AI rebuild. Here you can add your own goals. */
+/** Fired every time NexusNPC (re)builds an NPC's goals in OVERRIDE mode (never in VANILLA mode, where the mob keeps its own goals). Here you can add your own goals. */
 public class NpcGoalsEvent extends Event {
-    private final NpcEntity npc;
+    private final PathfinderMob npc;
     private final GoalSelector goalSelector, targetSelector;
 
-    public NpcGoalsEvent(NpcEntity npc, GoalSelector goalSelector, GoalSelector targetSelector) {
+    public NpcGoalsEvent(PathfinderMob npc, GoalSelector goalSelector, GoalSelector targetSelector) {
         this.npc = npc; this.goalSelector = goalSelector; this.targetSelector = targetSelector;
     }
-    public NpcEntity getNpc() { return npc; }
+    public PathfinderMob getNpc() { return npc; }
     public GoalSelector getGoalSelector() { return goalSelector; }
     public GoalSelector getTargetSelector() { return targetSelector; }
 }

@@ -2,7 +2,7 @@ package com.talesforge.nexusnpc.compat.rpg;
 
 import com.mojang.serialization.Codec;
 import com.talesforge.nexusnpc.NexusNPC;
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.npc.field.NpcSettingField;
 import com.talesforge.nexusnpc.npc.field.NpcSettingFields;
 import com.talesforge.nexusrpg.api.NexusRPGApi;
@@ -40,10 +40,10 @@ public final class RpgSettingFields {
         public ResourceLocation id() { return rl("faction"); }
         public Codec<String> codec() { return Codec.STRING; }
         public String defaultValue() { return ""; }
-        public String get(NpcEntity npc) {
+        public String get(Mob npc) {
             return NexusRPGApi.profiles().faction(npc).map(ResourceLocation::toString).orElse("");
         }
-        public void set(NpcEntity npc, String value) {
+        public void set(Mob npc, String value) {
             String raw = value.trim();
             ResourceLocation target = raw.isEmpty() ? null : ResourceLocation.tryParse(raw);
             if (!raw.isEmpty() && target == null) return;  // Malformed id: ignore
@@ -57,10 +57,10 @@ public final class RpgSettingFields {
         public ResourceLocation id() { return rl("classes"); }
         public Codec<List<String>> codec() { return Codec.STRING.listOf(); }
         public List<String> defaultValue() { return List.of(); }
-        public List<String> get(NpcEntity npc) {
+        public List<String> get(Mob npc) {
             return NexusRPGApi.profiles().classes(npc).stream().map(ResourceLocation::toString).toList();
         }
-        public void set(NpcEntity npc, List<String> value) {
+        public void set(Mob npc, List<String> value) {
             List<ResourceLocation> wanted = new ArrayList<>();
             for (String raw : value) {
                 if (raw.isBlank()) continue;
@@ -85,10 +85,10 @@ public final class RpgSettingFields {
         public ResourceLocation id() { return rl("team"); }
         public Codec<String> codec() { return Codec.STRING; }
         public String defaultValue() { return ""; }
-        public String get(NpcEntity npc) {
+        public String get(Mob npc) {
             return NexusRPGApi.teams().teamOf(npc).map(RpgTeam::name).orElse("");
         }
-        public void set(NpcEntity npc, String value) {
+        public void set(Mob npc, String value) {
             MinecraftServer server = npc.getServer();
             if (server == null) return;
             TeamService teams = NexusRPGApi.teams();

@@ -3,6 +3,10 @@ package com.talesforge.nexusnpc.npc.field;
 import com.mojang.serialization.Codec;
 import com.talesforge.nexusnpc.NexusNPC;
 import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import com.talesforge.nexusnpc.npc.NpcStats;
+import com.talesforge.nexusnpc.npc.Npcs;
+import com.talesforge.nexusnpc.npc.data.NpcAiMode;
+import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.npc.attitude.NpcAttitudes;
 import com.talesforge.nexusnpc.npc.behavior.NpcBehaviors;
 import com.talesforge.nexusnpc.npc.dialogue.NpcDialogue;
@@ -55,16 +59,16 @@ public final class NpcSettingFields {
 
     // ============================================================
     //  Core fields — every one of these is implemented purely
-    //  through NpcEntity's PUBLIC API. An addon mod could write
-    //  fields exactly like this for its own custom NpcEntity data.
+    //  through the public Npcs / NpcStats API on a plain Mob. An addon
+    //  mod can write fields exactly like this for its own data.
     // ============================================================
 
     public static final NpcSettingField<String> NAME = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("name"); }
         public Codec<String> codec() { return Codec.STRING; }
         public String defaultValue() { return ""; }
-        public String get(NpcEntity npc) { return npc.hasCustomName() ? npc.getCustomName().getString() : ""; }
-        public void set(NpcEntity npc, String value) {
+        public String get(Mob npc) { return npc.hasCustomName() ? npc.getCustomName().getString() : ""; }
+        public void set(Mob npc, String value) {
             String trimmed = value.trim();
             if (trimmed.length() > 32) trimmed = trimmed.substring(0, 32);
             npc.setCustomName(trimmed.isEmpty() ? null : Component.literal(trimmed));
@@ -76,8 +80,8 @@ public final class NpcSettingFields {
         public ResourceLocation id() { return rl("attitude"); }
         public Codec<ResourceLocation> codec() { return ResourceLocation.CODEC; }
         public ResourceLocation defaultValue() { return NpcAttitudes.DEFAULT_ID; }
-        public ResourceLocation get(NpcEntity npc) { return npc.getAttitudeId(); }
-        public void set(NpcEntity npc, ResourceLocation value) { npc.setAttitudeData(value); }
+        public ResourceLocation get(Mob npc) { return Npcs.attitudeId(npc); }
+        public void set(Mob npc, ResourceLocation value) { Npcs.setAttitudeData(npc, value); }
         public boolean needsAiRefresh() { return true; }
     };
 
@@ -85,8 +89,21 @@ public final class NpcSettingFields {
         public ResourceLocation id() { return rl("behavior"); }
         public Codec<ResourceLocation> codec() { return ResourceLocation.CODEC; }
         public ResourceLocation defaultValue() { return NpcBehaviors.DEFAULT_ID; }
-        public ResourceLocation get(NpcEntity npc) { return npc.getBehaviorId(); }
-        public void set(NpcEntity npc, ResourceLocation value) { npc.setBehaviorData(value); }
+        public ResourceLocation get(Mob npc) { return Npcs.behaviorId(npc); }
+        public void set(Mob npc, ResourceLocation value) { Npcs.setBehaviorData(npc, value); }
+        public boolean needsAiRefresh() { return true; }
+    };
+
+    /**
+     * VANILLA = the mob keeps its own AI (default for every ordinary mob); OVERRIDE = NexusNPC's attitude and
+     * behavior goals replace it. See {@link NpcAiMode}.
+     */
+    public static final NpcSettingField<NpcAiMode> AI_MODE = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("ai_mode"); }
+        public Codec<NpcAiMode> codec() { return NpcAiMode.CODEC; }
+        public NpcAiMode defaultValue() { return NpcAiMode.VANILLA; }
+        public NpcAiMode get(Mob npc) { return Npcs.aiMode(npc); }
+        public void set(Mob npc, NpcAiMode value) { Npcs.setAiModeData(npc, value); }
         public boolean needsAiRefresh() { return true; }
     };
 
@@ -100,20 +117,22 @@ public final class NpcSettingFields {
         public ResourceLocation id() { return rl("model"); }
         public Codec<ResourceLocation> codec() { return ResourceLocation.CODEC; }
         public ResourceLocation defaultValue() { return NpcModels.DEFAULT_ID; }
-        public ResourceLocation get(NpcEntity npc) { return npc.getModelId(); }
-        public void set(NpcEntity npc, ResourceLocation value) { npc.setModelData(value); }
+        public boolean appliesTo(Mob npc) { return npc instanceof NpcEntity; }
+        public ResourceLocation get(Mob npc) { return npc instanceof NpcEntity e ? e.getModelId() : NpcModels.DEFAULT_ID; }
+        public void set(Mob npc, ResourceLocation value) { if (npc instanceof NpcEntity e) e.setModelData(value); }
     };
 
     public static final NpcSettingField<String> SKIN = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("skin"); }
         public Codec<String> codec() { return Codec.STRING; }
         public String defaultValue() { return NpcModels.HUMANOID_DEFAULT_SKIN.toString(); }
-        public String get(NpcEntity npc) { return npc.getSkinTexture().toString(); }
-        public void set(NpcEntity npc, String value) {
+        public boolean appliesTo(Mob npc) { return npc instanceof NpcEntity; }
+        public String get(Mob npc) { return npc instanceof NpcEntity e ? e.getSkinTexture().toString() : NpcModels.HUMANOID_DEFAULT_SKIN.toString(); }
+        public void set(Mob npc, String value) {
             // No pre-validation needed: setSkin stores the raw string, unparsed, and
             // NpcEntity#getSkinTexture() re-validates against whatever model is CURRENT
             // every time it's read — an incompatible or malformed value is never exposed.
-            npc.setSkin(value);
+            if (npc instanceof NpcEntity e) e.setSkin(value);
         }
     };
 
@@ -121,24 +140,24 @@ public final class NpcSettingFields {
         public ResourceLocation id() { return rl("max_health"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
         public Double defaultValue() { return 20.0; }
-        public Double get(NpcEntity npc) { return npc.getAttributeBaseValue(Attributes.MAX_HEALTH); }
-        public void set(NpcEntity npc, Double value) { npc.setMaxHealthValue(sanitize(value, defaultValue())); }
+        public Double get(Mob npc) { return NpcStats.base(npc, Attributes.MAX_HEALTH, defaultValue()); }
+        public void set(Mob npc, Double value) { NpcStats.setMaxHealth(npc, sanitize(value, defaultValue())); }
     };
 
     public static final NpcSettingField<Double> DAMAGE = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("damage"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
         public Double defaultValue() { return 2.0; }
-        public Double get(NpcEntity npc) { return npc.getAttributeBaseValue(Attributes.ATTACK_DAMAGE); }
-        public void set(NpcEntity npc, Double value) { npc.setDamageValue(sanitize(value, defaultValue())); }
+        public Double get(Mob npc) { return NpcStats.base(npc, Attributes.ATTACK_DAMAGE, defaultValue()); }
+        public void set(Mob npc, Double value) { NpcStats.setDamage(npc, sanitize(value, defaultValue())); }
     };
 
     public static final NpcSettingField<Double> SPEED = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("speed"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
         public Double defaultValue() { return 0.25; }
-        public Double get(NpcEntity npc) { return npc.getAttributeBaseValue(Attributes.MOVEMENT_SPEED); }
-        public void set(NpcEntity npc, Double value) { npc.setSpeedValue(sanitize(value, defaultValue())); }
+        public Double get(Mob npc) { return NpcStats.base(npc, Attributes.MOVEMENT_SPEED, defaultValue()); }
+        public void set(Mob npc, Double value) { NpcStats.setSpeed(npc, sanitize(value, defaultValue())); }
     };
 
     private static double sanitize(double value, double fallback) {
@@ -149,16 +168,16 @@ public final class NpcSettingFields {
         public ResourceLocation id() { return rl("dialogue"); }
         public Codec<NpcDialogue> codec() { return NpcDialogue.CODEC; }
         public NpcDialogue defaultValue() { return NpcDialogue.EMPTY; }
-        public NpcDialogue get(NpcEntity npc) { return npc.getDialogue(); }
-        public void set(NpcEntity npc, NpcDialogue value) { npc.setDialogue(value); }
+        public NpcDialogue get(Mob npc) { return Npcs.dialogue(npc); }
+        public void set(Mob npc, NpcDialogue value) { Npcs.setDialogue(npc, value); }
     };
 
     public static final NpcSettingField<NpcQuests> QUESTS = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("quests"); }
         public Codec<NpcQuests> codec() { return NpcQuests.CODEC; }
         public NpcQuests defaultValue() { return NpcQuests.EMPTY; }
-        public NpcQuests get(NpcEntity npc) { return npc.getQuests(); }
-        public void set(NpcEntity npc, NpcQuests value) { npc.setQuests(value); }
+        public NpcQuests get(Mob npc) { return Npcs.quests(npc); }
+        public void set(Mob npc, NpcQuests value) { Npcs.setQuests(npc, value); }
     };
 
     /**
@@ -173,6 +192,7 @@ public final class NpcSettingFields {
         register(NAME);
         register(ATTITUDE);
         register(BEHAVIOR);
+        register(AI_MODE);
         register(MODEL);
         register(SKIN);
         register(MAX_HEALTH);

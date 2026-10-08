@@ -1,6 +1,6 @@
 package com.talesforge.nexusnpc.npc.behavior;
 
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 
@@ -9,7 +9,7 @@ public class WanderBehavior implements NpcBehaviorType {
     public WanderBehavior(double speed) { this.speed = speed; }
 
     @Override
-    public void createGoals(NpcEntity npc, GoalSelector goals) {
+    public void createGoals(PathfinderMob npc, GoalSelector goals) {
         goals.addGoal(5, new WaterAvoidingRandomStrollGoal(npc, speed));
     }
 }

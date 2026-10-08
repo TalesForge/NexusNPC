@@ -1,7 +1,8 @@
 package com.talesforge.nexusnpc.menu;
 
 import com.talesforge.nexusnpc.NexusNPC;
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import com.talesforge.nexusnpc.npc.Npcs;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.inventory.MenuType;
@@ -21,8 +22,8 @@ public final class ModMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<TradeEditMenu>> TRADE_EDIT =
             MENU_TYPES.register("trade_edit", () -> IMenuTypeExtension.create((containerId, inventory, buf) -> {
                 Entity entity = inventory.player.level().getEntity(buf.readVarInt());
-                if (!(entity instanceof NpcEntity npc)) {
-                    throw new IllegalStateException("Trade editor menu opened for a non-NPC entity");
+                if (!(entity instanceof Mob npc)) {
+                    throw new IllegalStateException("Trade editor menu opened for a non-mob entity");
                 }
                 return new TradeEditMenu(containerId, inventory, npc);
             }));

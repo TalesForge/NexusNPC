@@ -7,28 +7,32 @@ import com.talesforge.nexusnpc.npc.NpcRegistries;
 import com.talesforge.nexusnpc.npc.attitude.NpcAttitudeType;
 import com.talesforge.nexusnpc.npc.attitude.NpcAttitudes;
 import com.talesforge.nexusnpc.npc.behavior.NpcBehaviors;
+import com.talesforge.nexusnpc.npc.data.NpcAiMode;
 import com.talesforge.nexusnpc.npc.field.NpcDataMap;
 import com.talesforge.nexusnpc.npc.field.NpcSettingFields;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Owns NpcSettingFields.ATTITUDE and .BEHAVIOR. Two fields, one section, since they're picked together conceptually. */
+/** Owns NpcSettingFields.ATTITUDE, .BEHAVIOR and .AI_MODE — picked together conceptually. */
 public final class LogicSection implements NpcGuiSection {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "logic");
 
     private ResourceLocation attitude;
     private ResourceLocation behavior;
+    private NpcAiMode aiMode;
 
     private LogicSection(NpcDataMap initial) {
         this.attitude = initial.get(NpcSettingFields.ATTITUDE);
         this.behavior = initial.get(NpcSettingFields.BEHAVIOR);
+        this.aiMode = initial.get(NpcSettingFields.AI_MODE);
     }
 
     @Override
@@ -57,13 +61,23 @@ public final class LogicSection implements NpcGuiSection {
                 .create(x, y + 24, width, 20, Component.translatable("gui.nexusnpc.behavior"),
                         (btn, value) -> this.behavior = value));
 
-        return 48;
+        // VANILLA: the mob keeps its own AI (attitude/behavior above do nothing). OVERRIDE: they replace it.
+        addWidget.accept(CycleButton.<NpcAiMode>builder(
+                        mode -> Component.translatable("gui.nexusnpc.ai_mode." + mode.getSerializedName()))
+                .withValues(NpcAiMode.values())
+                .withInitialValue(aiMode)
+                .withTooltip(mode -> Tooltip.create(Component.translatable("gui.nexusnpc.ai_mode." + mode.getSerializedName() + ".tooltip")))
+                .create(x, y + 48, width, 20, Component.translatable("gui.nexusnpc.ai_mode"),
+                        (btn, value) -> this.aiMode = value));
+
+        return 72;
     }
 
     @Override
     public void collect(NpcDataMap out) {
         out.put(NpcSettingFields.ATTITUDE, attitude);
         out.put(NpcSettingFields.BEHAVIOR, behavior);
+        out.put(NpcSettingFields.AI_MODE, aiMode);
     }
 
     public static final class Factory implements NpcGuiSectionFactory {

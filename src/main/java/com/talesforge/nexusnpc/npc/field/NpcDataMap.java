@@ -1,7 +1,9 @@
 package com.talesforge.nexusnpc.npc.field;
 
 import com.talesforge.nexusnpc.NexusNPC;
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import com.talesforge.nexusnpc.npc.Npcs;
+import com.talesforge.nexusnpc.npc.ai.NpcAi;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -59,16 +61,16 @@ public final class NpcDataMap {
         values.put(field.id(), field.defaultValue());
     }
 
-    /** Snapshot every registered field's current value from a live NPC — the new {@code NpcEntity#getSettings()}. */
-    public static NpcDataMap capture(NpcEntity npc) {
+    /** Snapshot every registered field's current value from a live NPC — the new {@code NexusNpcApi#getSettings(Mob)}. */
+    public static NpcDataMap capture(Mob npc) {
         NpcDataMap data = new NpcDataMap();
         for (NpcSettingField<?> field : NpcSettingFields.all()) {
-            data.captureOne(field, npc);
+            if (field.appliesTo(npc)) data.captureOne(field, npc);
         }
         return data;
     }
 
-    private <T> void captureOne(NpcSettingField<T> field, NpcEntity npc) {
+    private <T> void captureOne(NpcSettingField<T> field, Mob npc) {
         values.put(field.id(), field.get(npc));
     }
 
@@ -98,18 +100,24 @@ public final class NpcDataMap {
 
     /**
      * Apply every value present in this map back onto a live NPC — the new
-     * {@code NpcEntity#applySettings(...)}. Server-side only.
+     * {@code NexusNpcApi#applySettings(Mob, NpcDataMap, boolean)}. Server-side only.
      *
      * @param heal true when creating a fresh NPC (heal to the new max health),
      *             false when editing an existing one (health only ever clamped down).
      */
-    public void applyAll(NpcEntity npc, boolean heal) {
-        boolean refreshAi = false;
+    public void applyAll(Mob npc, boolean heal) {
+        boolean refreshAi = Npcs.attach(npc);  // Saving settings is what turns an ordinary mob into an NPC
         for (NpcSettingField<?> field : NpcSettingFields.all()) {
             if (!values.containsKey(field.id())) continue; // absent from this map — leave untouched
+            if (!field.appliesTo(npc)) continue;           // e.g. model/skin on a cow
             refreshAi |= applyOne(field, npc);
         }
-        if (refreshAi) npc.refreshAi();
+        if (refreshAi) NpcAi.apply(npc);
+
+        // Read back what is actually stored, so "it did not save" is visible in the log with numbers
+        NexusNPC.LOGGER.info("Applied NPC settings to {} (npc={}, dialogue pages={}, quests={}, trades={}, aiMode={})",
+                npc.getType(), Npcs.isNpc(npc), Npcs.dialogue(npc).pages().size(),
+                Npcs.quests(npc).quests().size(), Npcs.trades(npc).offers().size(), Npcs.aiMode(npc));
 
         if (heal) {
             npc.setHealth(npc.getMaxHealth());
@@ -119,7 +127,7 @@ public final class NpcDataMap {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> boolean applyOne(NpcSettingField<T> field, NpcEntity npc) {
+    private <T> boolean applyOne(NpcSettingField<T> field, Mob npc) {
         field.set(npc, (T) values.get(field.id()));
         return field.needsAiRefresh();
     }
@@ -127,7 +135,7 @@ public final class NpcDataMap {
     // ============================================================
     //  NBT (de)serialization — shared by the network StreamCodec above.
     //  Feel free to reuse toTag()/fromTag() for on-disk persistence too,
-    //  though core fields already persist through NpcEntity's own NBT.
+    //  though core fields already persist through the NPC data attachment.
     // ============================================================
 
     public CompoundTag toTag() {

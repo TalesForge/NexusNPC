@@ -1,5 +1,6 @@
 package com.talesforge.nexusnpc.client.gui.section;
 
+import com.talesforge.nexusnpc.api.NexusNpcApi;
 import com.talesforge.nexusnpc.client.gui.section.core.*;
 import com.talesforge.nexusnpc.compat.rpg.client.NexusRpgClientCompat;
 import net.minecraft.resources.ResourceLocation;
@@ -66,9 +67,15 @@ public final class NpcGuiRegistry {
         for (NpcGuiSectionFactory factory : SECTIONS) {
             if (DISABLED_GLOBALLY.contains(factory.id())) continue;
             if (disabledHere.contains(factory.id())) continue;
+            // Model/skin only exist on NexusNPC's own entity types; an ordinary mob keeps its look
+            if (factory.id().equals(AppearanceSection.ID) && !isNpcType(entityTypeId)) continue;
             result.add(factory);
         }
         return result;
+    }
+
+    private static boolean isNpcType(ResourceLocation entityTypeId) {
+        return NexusNpcApi.types().stream().anyMatch(entry -> entry.id().equals(entityTypeId));
     }
 
     /**

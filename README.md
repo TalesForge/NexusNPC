@@ -57,6 +57,17 @@ static {
 See the Javadoc on `NexusNPCApi`, `NpcRegistries`, `NpcInteractEvent`, and
 `NpcGoalsEvent` for details.
 
+## NPCs on any mob
+
+NPC logic lives on vanilla `Mob` / `PathfinderMob` instead of a dedicated base class. Any mob (vanilla or modded) can become an NPC.
+
+- NPC data (dialogue, quests, trades, attitude, behavior) is a data attachment, `nexusnpc:npc_data`. A mob *is* an NPC when it has it; other mobs are untouched and cost nothing.
+- `Npcs` is the single entry point: `Npcs.enable(mob)`, `Npcs.disable(mob)`, `Npcs.dialogue(mob)`, `Npcs.merchant(mob)`, ...
+- AI mode (`NpcAiMode`): `VANILLA` keeps the mob's own AI (default for ordinary mobs); `OVERRIDE` replaces it with the attitude/behavior goals (the original goals are restored on revert). `OVERRIDE` only works for goal-driven `PathfinderMob`s; Brain-driven mobs stay `VANILLA`.
+- Mixins are minimal: `MobMixin` (transient state + goal selector access) and `LivingEntityMixin` (`isImmobile` while editing). Everything else uses NeoForge events.
+- `NpcEntity` is now a thin appearance shell (model, skin, hitbox) for addons and resource packs.
+- Config: `allow_vanilla_mobs`, `blocked_entity_types` (ender dragon and wither by default).
+
 ## Configuration
 
 Server-synced config (`config/nexusnpc-server.toml`):

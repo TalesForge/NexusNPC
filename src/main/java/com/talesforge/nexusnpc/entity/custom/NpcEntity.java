@@ -1,102 +1,42 @@
 package com.talesforge.nexusnpc.entity.custom;
 
-import com.mojang.serialization.Codec;
-import com.talesforge.nexusnpc.NexusNPC;
-import com.talesforge.nexusnpc.api.event.NpcGoalsEvent;
-import com.talesforge.nexusnpc.api.event.NpcInteractEvent;
-import com.talesforge.nexusnpc.config.Config;
-import com.talesforge.nexusnpc.item.ModItems;
-import com.talesforge.nexusnpc.network.payload.screen.OpenDialoguePayload;
 import com.talesforge.nexusnpc.npc.NpcRegistries;
-import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
+import com.talesforge.nexusnpc.npc.data.NpcAiMode;
+import com.talesforge.nexusnpc.npc.data.NpcData;
 import com.talesforge.nexusnpc.npc.dialogue.NpcDialogue;
-import com.talesforge.nexusnpc.npc.field.NpcDataMap;
-import com.talesforge.nexusnpc.npc.attitude.NpcAttitudeType;
-import com.talesforge.nexusnpc.npc.attitude.NpcAttitudes;
-import com.talesforge.nexusnpc.npc.behavior.NpcBehaviors;
 import com.talesforge.nexusnpc.npc.model.NpcModelSkins;
 import com.talesforge.nexusnpc.npc.model.NpcModels;
 import com.talesforge.nexusnpc.npc.quest.NpcQuests;
 import com.talesforge.nexusnpc.npc.trade.NpcTrades;
-import com.talesforge.nexusnpc.npc.trade.TradeOffer;
-import net.minecraft.core.Holder;
+import com.talesforge.nexusnpc.NexusNPC;
+import com.mojang.serialization.Codec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.AnimationState;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.trading.Merchant;
-import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
-import java.util.UUID;
 
-public class NpcEntity extends PathfinderMob implements Merchant {
+/**
+ * NexusNPC's own humanoid-style mob. It is ONLY the "appearance" half of the framework: a model, a
+ * skin and a hitbox that depend on the selected {@code NpcModelType}. Everything that makes it an
+ * NPC (dialogue, quests, trading, attitude, behavior, the editor lock) is not here — it lives on
+ * {@link Mob} for every mob and is reached through {@link com.talesforge.nexusnpc.npc.Npcs}.
+ * <p>
+ * Addons that want custom models or resource-pack skins extend this class (or register their own type
+ * through {@code NexusNpcApi.registerType}); everything else should just turn an ordinary mob into an NPC.
+ */
+public class NpcEntity extends PathfinderMob {
 
-    // ===== Dialogues / quests / trading =====
-    private NpcDialogue dialogue = NpcDialogue.EMPTY;
-    private NpcQuests quests = NpcQuests.EMPTY;
-    private NpcTrades trades = NpcTrades.EMPTY;
-    @Nullable private MerchantOffers cachedOffers;
-    @Nullable private Player tradingPlayer;
-    private int villagerXp = 0;
-
-    public NpcDialogue getDialogue() { return dialogue; }
-    public void setDialogue(NpcDialogue dialogue) { this.dialogue = dialogue; }
-
-    public NpcQuests getQuests() { return quests; }
-    public void setQuests(NpcQuests quests) { this.quests = quests; }
-
-    public NpcTrades getTrades() { return trades; }
-    public void setTrades(NpcTrades trades) { this.trades = trades; this.cachedOffers = null; }
-
-    // ===== Merchant =====
-    @Override public void setTradingPlayer(@Nullable Player player) { this.tradingPlayer = player; }
-    @Override @Nullable public Player getTradingPlayer() { return tradingPlayer; }
-
-    @Override
-    public MerchantOffers getOffers() {
-        if (cachedOffers == null) {
-            cachedOffers = new MerchantOffers();
-            for (TradeOffer offer : trades.offers()) cachedOffers.add(offer.toMerchantOffer());
-        }
-        return cachedOffers;
-    }
-
-    @Override public void overrideOffers(MerchantOffers offers) {}  // Сделки не loot-table-driven — нечего переопределять
-    @Override public void notifyTrade(MerchantOffer offer) { offer.increaseUses(); playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F); }
-    @Override public void notifyTradeUpdated(ItemStack stack) {}
-    @Override public int getVillagerXp() { return villagerXp; }
-    @Override public void overrideXp(int xp) { this.villagerXp = xp; }
-    @Override public boolean showProgressBar() { return false; }
-    @Override public SoundEvent getNotifyTradeSound() { return SoundEvents.VILLAGER_YES; }
-    @Override public boolean isClientSide() { return level().isClientSide(); }
-
-
-    private static final EntityDataAccessor<String > DATA_ATTITUDE =
-            SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<String> DATA_BEHAVIOR =
-            SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_MODEL =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> DATA_SKIN =
@@ -105,28 +45,19 @@ public class NpcEntity extends PathfinderMob implements Merchant {
     public final AnimationState idleAnimationState = new AnimationState();
     private int idleAnimationTimeout = 0;
 
+    /** Data from saves made before NPC data moved into an attachment; consumed once on join (see NpcEvents). */
+    @Nullable private NpcData legacyData;
+
     public NpcEntity(EntityType<? extends NpcEntity> entityType, Level level) {
         super(entityType, level);
     }
 
-    // ========== Synchronized data ==========
+    // ========== Synchronized appearance ==========
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(DATA_ATTITUDE, NpcAttitudes.DEFAULT_ID.toString());
-        builder.define(DATA_BEHAVIOR, NpcBehaviors.DEFAULT_ID.toString());
         builder.define(DATA_MODEL, NpcModels.DEFAULT_ID.toString());
         builder.define(DATA_SKIN, NpcRegistries.model(NpcModels.DEFAULT_ID).defaultSkin().toString());
-    }
-
-    public ResourceLocation getAttitudeId() {
-        ResourceLocation id = ResourceLocation.tryParse(entityData.get(DATA_ATTITUDE));
-        return id != null && NpcRegistries.ATTITUDES.containsKey(id) ? id : NpcAttitudes.DEFAULT_ID;
-    }
-
-    public ResourceLocation getBehaviorId() {
-        ResourceLocation id = ResourceLocation.tryParse(entityData.get(DATA_BEHAVIOR));
-        return id != null && NpcRegistries.BEHAVIORS.containsKey(id) ? id : NpcBehaviors.DEFAULT_ID;
     }
 
     public ResourceLocation getModelId() {
@@ -140,32 +71,11 @@ public class NpcEntity extends PathfinderMob implements Merchant {
         return ResourceLocation.parse(validated);
     }
 
-
-    // ========== Internal Setters: change the data, but DO NOT re‑create the AI ==========
-    // NOTE: was private; made public to match setBehaviorData below and because
-    // NpcSettingFields.ATTITUDE (a different package) needs to call it directly,
-    // exactly like an addon field would.
-    public void setAttitudeData(ResourceLocation id) {
-        if (!NpcRegistries.ATTITUDES.containsKey(id) || !NpcRegistries.attitude(id).isEnabled()) {
-            id = NpcAttitudes.DEFAULT_ID;
-        }
-        entityData.set(DATA_ATTITUDE, id.toString());
-    }
-
-    public void setBehaviorData(ResourceLocation id) {
-        if (!NpcRegistries.BEHAVIORS.containsKey(id)) id = NpcBehaviors.DEFAULT_ID;
-        entityData.set(DATA_BEHAVIOR, id.toString());
-    }
-
     /**
-     * Changes the model and immediately recomputes the hitbox/eye height via
-     * {@link #refreshDimensions()}, which triggers NeoForge's {@code EntityEvent.Size}
-     * (see {@code ModEventBusEvents#onSize}) — that's what actually reads the new model's
-     * {@code NpcModelType} and applies it.
-     * Does NOT touch the current skin value; if it doesn't belong to the new model,
-     * {@link #getSkinTexture()} already falls back to the new model's own default on read,
-     * so nothing needs correcting here — but see NpcSettingFields.MODEL for why it's still
-     * registered BEFORE the skin field (so a GUI save that changes both together is coherent).
+     * Changes the model and immediately recomputes the hitbox/eye height via {@link #refreshDimensions()},
+     * which fires NeoForge's {@code EntityEvent.Size} (see {@code ModEventBusEvents#onSize}) — that is what
+     * actually reads the new model's {@code NpcModelType}. Does NOT touch the skin; an incompatible skin
+     * already falls back to the new model's default on read in {@link #getSkinTexture()}.
      */
     public void setModelData(ResourceLocation id) {
         if (!NpcRegistries.MODELS.containsKey(id)) id = NpcModels.DEFAULT_ID;
@@ -173,117 +83,9 @@ public class NpcEntity extends PathfinderMob implements Merchant {
         refreshDimensions();
     }
 
-    // ========== Public Setters (to be called on the server): change the data and rebuild the AI ==========
-    public void setAttitude(ResourceLocation id) {
-        setAttitudeData(id);
-        refreshAi();
-    }
-
-    public void setBehavior(ResourceLocation id) {
-        setBehaviorData(id);
-        refreshAi();
-    }
-
-    /** Stores whatever is passed in, unparsed — {@link #getSkinTexture()} is what actually validates it against the current model on read, and only IT ever needs to parse a ResourceLocation. */
+    /** Stores whatever is passed in, unparsed — {@link #getSkinTexture()} validates it on read. */
     public void setSkin(String texture) {
         entityData.set(DATA_SKIN, texture);
-    }
-
-    // Hitbox and eye height are per-model, not fixed at EntityType registration. In 1.21.1,
-    // LivingEntity.getDimensions(Pose)/getEyeHeight(Pose, EntityDimensions) are FINAL — NeoForge
-    // computes them itself and fires EntityEvent.Size so mods can override the result, instead
-    // of a protected method being the override point. See ModEventBusEvents#onSize for the
-    // actual logic; this class only needs to trigger a recompute when the model changes.
-
-    // Single-attribute setters used by NpcSettingFields.MAX_HEALTH / DAMAGE / SPEED.
-    // Health clamping relative to the (possibly changed) max health is handled once,
-    // generically, by NpcDataMap#applyAll — it doesn't belong to any single attribute.
-    public void setMaxHealthValue(double value) {
-        setBase(Attributes.MAX_HEALTH, Mth.clamp(value, 1.0, Config.MAX_HEALTH_LIMIT.get()));
-    }
-
-    public void setDamageValue(double value) {
-        setBase(Attributes.ATTACK_DAMAGE, Mth.clamp(value, 0.0, Config.MAX_DAMAGE_LIMIT.get()));
-    }
-
-    public void setSpeedValue(double value) {
-        setBase(Attributes.MOVEMENT_SPEED, Mth.clamp(value, 0.05, 1.0));
-    }
-
-    private void setBase(Holder<Attribute> attribute, double value) {
-        AttributeInstance instance = getAttribute(attribute);
-        if (instance != null) instance.setBaseValue(value);
-    }
-
-
-    // ========== AI ==========
-    @Override
-    protected void registerGoals() {
-        goalSelector.addGoal(0, new FloatGoal(this));  // Not to drown
-
-        NpcAttitudeType attitude = NpcRegistries.attitude(getAttitudeId());
-        attitude.createGoals(this, goalSelector);
-        attitude.createTargetGoals(this, targetSelector);
-
-        NpcRegistries.behavior(getBehaviorId()).createGoals(this, goalSelector);
-
-        goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
-        goalSelector.addGoal(7, new RandomLookAroundGoal(this));
-
-        NeoForge.EVENT_BUS.post(new NpcGoalsEvent(this, goalSelector, targetSelector));
-    }
-
-    /** Rebuild the AI after changing the settings */
-    public void refreshAi() {
-        if (level().isClientSide()) return;
-        goalSelector.removeAllGoals(goal -> true);
-        targetSelector.removeAllGoals(goal -> true);
-        setTarget(null);
-        registerGoals();
-    }
-
-
-    // ========== Saving ==========
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
-        tag.putString("Attitude", getAttitudeId().toString());
-        tag.putString("Behavior", getBehaviorId().toString());
-        tag.putString("Model", getModelId().toString());
-        tag.putString("Skin", entityData.get(DATA_SKIN));
-
-        saveCodec(tag, "Dialogue", NpcDialogue.CODEC, dialogue);
-        saveCodec(tag, "Quests", NpcQuests.CODEC, quests);
-        saveCodec(tag, "Trades", NpcTrades.CODEC, trades);
-    }
-
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        if (tag.contains("Attitude")) entityData.set(DATA_ATTITUDE, tag.getString("Attitude"));
-        if (tag.contains("Behavior")) entityData.set(DATA_BEHAVIOR, tag.getString("Behavior"));
-        if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
-        if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
-
-        this.dialogue = loadCodec(tag, "Dialogue", NpcDialogue.CODEC, NpcDialogue.EMPTY);
-        this.quests = loadCodec(tag, "Quests", NpcQuests.CODEC, NpcQuests.EMPTY);
-        setTrades(loadCodec(tag, "Trades", NpcTrades.CODEC, NpcTrades.EMPTY));
-
-        refreshDimensions();
-        refreshAi();
-    }
-
-    private static <T> void saveCodec(CompoundTag tag, String key, Codec<T> codec, T value) {
-        codec.encodeStart(NbtOps.INSTANCE, value)
-                .resultOrPartial(err -> NexusNPC.LOGGER.error("Could not save NPC '{}': {}", key, err))
-                .ifPresent(encoded -> tag.put(key, encoded));
-    }
-
-    private static <T> T loadCodec(CompoundTag tag, String key, Codec<T> codec, T fallback) {
-        if (!tag.contains(key)) return fallback;
-        return codec.parse(NbtOps.INSTANCE, tag.get(key))
-                .resultOrPartial(err -> NexusNPC.LOGGER.error("Could not load NPC '{}': {}", key, err))
-                .orElse(fallback);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -294,64 +96,59 @@ public class NpcEntity extends PathfinderMob implements Merchant {
                 .add(Attributes.FOLLOW_RANGE, 24D);
     }
 
-
-    // ========== Interaction ==========
-    /** RMB on NPC */
+    // ========== Saving ==========
     @Override
-    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
-        if (player.getItemInHand(hand).is(ModItems.CONTROL_STAFF) ||
-            player.getItemInHand(hand).is(ModItems.GEAR_SETTINGS)) {
-            return InteractionResult.PASS;
-        }
-
-        // The event is triggered on both sides; the handler itself checks isClientSide()
-        if (NeoForge.EVENT_BUS.post(new NpcInteractEvent(this, player, hand)).isCanceled()) {
-            return InteractionResult.sidedSuccess(level().isClientSide());
-        }
-        return onInteract(player, hand);
+    public void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putString("Model", getModelId().toString());
+        tag.putString("Skin", entityData.get(DATA_SKIN));
     }
 
-    /** Hook for heirs. By default, it does nothing. */
-    protected InteractionResult onInteract(Player player, InteractionHand hand) {
-        DialoguePage start = dialogue.startPage();
-        if (start == null) return InteractionResult.PASS;
-        if (player instanceof ServerPlayer serverPlayer) {
-            PacketDistributor.sendToPlayer(serverPlayer, new OpenDialoguePayload(getId(), start));
-        }
-        return InteractionResult.sidedSuccess(level().isClientSide());
-    }
-
-    /** NPC shouldn’t disappear when the player is far away */
     @Override
-    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
-        return false;
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
+        if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
+
+        legacyData = readLegacy(tag);
+        refreshDimensions();
     }
 
-    /** While the NPC is being configured, it cannot be hit or killed */
-    @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (isBeingEdited()) return false;
-        return super.hurt(source, amount);
+    /** Pre-0.7 saves kept the NPC data as plain tags on the entity. Returns null for newer saves. */
+    @Nullable
+    private static NpcData readLegacy(CompoundTag tag) {
+        if (!(tag.contains("Dialogue") || tag.contains("Quests") || tag.contains("Trades")
+                || tag.contains("Attitude") || tag.contains("Behavior"))) return null;
+
+        NpcData data = NpcData.create(NpcAiMode.OVERRIDE);
+        data = data.withDialogue(load(tag, "Dialogue", NpcDialogue.CODEC, NpcDialogue.EMPTY));
+        data = data.withQuests(load(tag, "Quests", NpcQuests.CODEC, NpcQuests.EMPTY));
+        data = data.withTrades(load(tag, "Trades", NpcTrades.CODEC, NpcTrades.EMPTY));
+        ResourceLocation attitude = ResourceLocation.tryParse(tag.getString("Attitude"));
+        ResourceLocation behavior = ResourceLocation.tryParse(tag.getString("Behavior"));
+        if (attitude != null) data = data.withAttitude(attitude);
+        if (behavior != null) data = data.withBehavior(behavior);
+        return data;
     }
 
-    /** Snapshot of every registered NpcSettingField's current value — core AND addon fields alike. */
-    public NpcDataMap getSettings() {
-        return NpcDataMap.capture(this);
+    private static <T> T load(CompoundTag tag, String key, Codec<T> codec, T fallback) {
+        if (!tag.contains(key)) return fallback;
+        return codec.parse(NbtOps.INSTANCE, tag.get(key))
+                .resultOrPartial(err -> NexusNPC.LOGGER.error("Could not migrate NPC '{}': {}", key, err))
+                .orElse(fallback);
     }
 
-    /**
-     * Apply settings coming from the client (call only on the server).
-     * Iterates every registered NpcSettingField present in {@code data} — an addon field
-     * arrives here exactly like a core one, this method never needs to change for it.
-     *
-     * @param heal whether to heal the NPC to its (new) maximum afterwards (true when created).
-     */
-    public void applySettings(NpcDataMap data, boolean heal) {
-        data.applyAll(this, heal);
+    /** One-shot: returns the migrated pre-0.7 data (if any) and forgets it. */
+    @Nullable
+    public NpcData takeLegacyData() {
+        NpcData data = legacyData;
+        legacyData = null;
+        return data;
     }
 
+    // ========== Client animation ==========
     private void setupAnimationStates() {
-        if(this.idleAnimationTimeout <= 0) {
+        if (this.idleAnimationTimeout <= 0) {
             this.idleAnimationTimeout = 40;  // Animation duration in Ticks (1 sec = 20 ticks)
             this.idleAnimationState.start(this.tickCount);
         } else {
@@ -362,67 +159,6 @@ public class NpcEntity extends PathfinderMob implements Merchant {
     @Override
     public void tick() {
         super.tick();
-        if(this.level().isClientSide()) {
-            this.setupAnimationStates();
-        } else {
-            checkEditor();
-        }
-    }
-
-
-    // ========== Editing ==========
-    public static final double EDITOR_MAX_DIST_SQ = 64.0;  // 8 blocks, just like in saveNpc
-    private static final int EDITOR_TIMEOUT_TICKS = 100;  // 5 seconds without a pulse
-
-    @Nullable
-    private UUID editorId;  // Intentionally NOT saved in NBT
-    private int editorLastPingTick;
-
-    public boolean isBeingEdited() {
-        return editorId != null;
-    }
-
-    public boolean isEditedBy(Player player) {
-        return editorId != null && editorId.equals(player.getUUID());
-    }
-
-    /**
-     * @return false if another player is already configuring the NPC
-     */
-    public boolean tryStartEditing(ServerPlayer player) {
-        if (editorId != null && !editorId.equals(player.getUUID())) return false;
-        editorId = player.getUUID();
-        editorLastPingTick = tickCount;
-
-        getNavigation().stop();  // Reset current path
-        setTarget(null);  // Forget target of attack
-        setDeltaMovement(getDeltaMovement().multiply(0.0, 1.0, 0.0));  // Extinguish horizontal inertia
-        return true;
-    }
-
-    public void editorPing() {
-        editorLastPingTick = tickCount;
-    }
-
-    public void stopEditing() {
-        editorId = null;
-    }
-
-    /** If true, LivingEntity.aiStep() does not start the AI: the NPC stands still and does not attack */
-    @Override
-    protected boolean isImmobile() {
-        return super.isImmobile() || editorId != null;
-    }
-
-    private void checkEditor() {
-        if (editorId == null) return;
-
-        Player editor = level().getPlayerByUUID(editorId);  // Null, if player has left or is in another dimension
-        boolean invalid = editor == null
-                || !editor.isAlive()
-                || distanceToSqr(editor) > EDITOR_MAX_DIST_SQ
-                || tickCount - editorLastPingTick > EDITOR_TIMEOUT_TICKS;
-
-        if (invalid) stopEditing();
+        if (this.level().isClientSide()) this.setupAnimationStates();
     }
 }

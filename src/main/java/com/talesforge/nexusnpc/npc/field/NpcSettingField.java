@@ -1,7 +1,7 @@
 package com.talesforge.nexusnpc.npc.field;
 
 import com.mojang.serialization.Codec;
-import com.talesforge.nexusnpc.entity.custom.NpcEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -33,12 +33,20 @@ public interface NpcSettingField<T> {
     T defaultValue();
 
     /** Current value on this live NPC instance. May be called on either side. */
-    T get(NpcEntity npc);
+    T get(Mob npc);
 
     /** Apply a new value to this NPC instance. Called only on the server. Must NOT rebuild AI itself. */
-    void set(NpcEntity npc, T value);
+    void set(Mob npc, T value);
 
-    /** If true, {@link NpcDataMap#applyAll} calls {@code npc.refreshAi()} once after all fields are applied. */
+    /**
+     * Whether this field means anything for the given mob. Fields that don't apply are skipped by
+     * {@link NpcDataMap} on capture and apply (e.g. model/skin only exist on NexusNPC's own entity).
+     */
+    default boolean appliesTo(Mob mob) {
+        return true;
+    }
+
+    /** If true, {@link NpcDataMap#applyAll} rebuilds the NPC AI ({@code NpcAi.apply}) once after all fields are applied. */
     default boolean needsAiRefresh() {
         return false;
     }

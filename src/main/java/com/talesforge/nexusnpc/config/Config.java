@@ -2,6 +2,8 @@ package com.talesforge.nexusnpc.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.List;
+
 public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -25,6 +27,17 @@ public class Config {
     public static final ModConfigSpec.BooleanValue REQUIRE_OP_PERMISSION = BUILDER
             .comment("Require operator permission (level 2) to create or edit NPCs with the Staff of Control")
             .define("require_op_permission", true);
+
+    public static final ModConfigSpec.BooleanValue ALLOW_VANILLA_MOBS = BUILDER
+            .comment("Allow turning ordinary (vanilla and modded) mobs into NPCs, not only NexusNPC's own NPC entity types")
+            .define("allow_vanilla_mobs", true);
+
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> BLOCKED_ENTITY_TYPES = BUILDER
+            .comment("Entity type ids that can never become NPCs (bosses and other mobs that break when their AI or data is touched)")
+            .defineListAllowEmpty("blocked_entity_types",
+                    List.of("minecraft:ender_dragon", "minecraft:wither"),
+                    () -> "minecraft:ender_dragon",
+                    o -> o instanceof String);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 

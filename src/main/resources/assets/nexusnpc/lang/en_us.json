@@ -66,11 +66,15 @@
   "npc_behavior.nexusnpc.stay": "Stay",
   "npc_behavior.nexusnpc.wander": "Wander",
   "npc_model.nexusnpc.humanoid": "Humanoid",
-  
   "gui.nexusnpc.faction": "Faction",
   "gui.nexusnpc.classes": "Classes (a, b, c)",
   "gui.nexusnpc.team": "Team",
   "gui.nexusnpc.none": "None",
   "npc_attitude.nexusnpc.faction_based": "By faction",
-  "gui.nexusnpc.dialogue.action.custom": "Special (addon)"
+  "gui.nexusnpc.dialogue.action.custom": "Special (addon)",
+  "gui.nexusnpc.ai_mode": "AI",
+  "gui.nexusnpc.ai_mode.vanilla": "Vanilla",
+  "gui.nexusnpc.ai_mode.override": "NPC",
+  "gui.nexusnpc.ai_mode.vanilla.tooltip": "The mob keeps its own AI. Attitude and behavior are ignored.",
+  "gui.nexusnpc.ai_mode.override.tooltip": "Attitude and behavior replace the mob's own AI. Not supported by Brain-driven mobs (villagers, piglins...)."
 }
