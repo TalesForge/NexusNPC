@@ -18,6 +18,10 @@ public final class NpcRuntime {
     @Nullable public UUID editorId;
     public int editorLastPingTick;
 
+    // ----- conversation -----
+    @Nullable public UUID talkerId;
+    public int talkerLastTick;
+
     // ----- trading -----
     @Nullable public NpcMerchant merchant;
 

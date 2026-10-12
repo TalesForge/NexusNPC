@@ -37,6 +37,9 @@ public sealed interface DialogueAction {
                 Codec.STRING.fieldOf("page").forGetter(Goto::pageId)
         ).apply(i, Goto::new));
         public String codecId() { return ID; }
+
+        @Override
+        public List<String> targetPages() { return pageId.isBlank() ? List.of() : List.of(pageId); }
     }
 
     /** Close the dialogue and open the NPC trading window (vanilla UI). */
@@ -54,6 +57,9 @@ public sealed interface DialogueAction {
                 Codec.STRING.fieldOf("next").forGetter(AcceptQuest::nextPageId)
         ).apply(i, AcceptQuest::new));
         public String codecId() { return ID; }
+
+        @Override
+        public List<String> targetPages() { return nextPageId.isBlank() ? List.of() : List.of(nextPageId); }
     }
 
     /**
@@ -70,6 +76,11 @@ public sealed interface DialogueAction {
                 Codec.STRING.fieldOf("fail").forGetter(TurnInQuest::failPageId)
         ).apply(i, TurnInQuest::new));
         public String codecId() { return ID; }
+
+        @Override
+        public List<String> targetPages() {
+            return List.of(successPageId, failPageId).stream().filter(p -> !p.isBlank()).toList();
+        }
     }
 
     /** It simply closes the player’s dialogue window. */

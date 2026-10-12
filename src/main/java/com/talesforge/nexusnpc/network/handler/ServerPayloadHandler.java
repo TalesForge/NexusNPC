@@ -6,6 +6,8 @@ import com.talesforge.nexusnpc.config.Config;
 import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.trade.NpcMerchant;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
+import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
+import com.talesforge.nexusnpc.network.payload.action.DialogueClosePayload;
 import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.item.ModItems;
 import com.talesforge.nexusnpc.menu.TradeEditMenu;
@@ -128,10 +130,11 @@ public class ServerPayloadHandler {
     public static void dialogueAction(DialogueActionPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
         if (!(player.level().getEntity(payload.entityId()) instanceof Mob npc) || !Npcs.isNpc(npc)) return;
-        if (player.distanceToSqr(npc) > NpcEditing.MAX_DIST_SQ) return;
+        if (player.distanceToSqr(npc) > NpcTalking.MAX_DIST_SQ) return;
 
         DialoguePage page = Npcs.dialogue(npc).page(payload.pageId());
         if (page == null || payload.optionIndex() < 0 || payload.optionIndex() >= page.options().size()) return;
+        NpcTalking.touch(npc, player);   // Any click proves the window is still open
 
         switch (page.options().get(payload.optionIndex()).action()) {
             case DialogueAction.Goto g -> sendPage(player, npc, g.pageId());
@@ -169,15 +172,26 @@ public class ServerPayloadHandler {
                 DialogueActionHandlers.Handler handler = DialogueActionHandlers.get(c.handlerId());
                 boolean ok = handler != null && handler.handle(player, npc, c);
                 String next = ok ? c.successPageId() : c.failPageId();
-                if (!next.isBlank()) sendPage(player, npc, next);  // Blank = the dialogue just ends
+                if (!next.isBlank()) sendPage(player, npc, next);
+                else PacketDistributor.sendToPlayer(player, new OpenDialoguePayload(npc.getId(), DialoguePage.END));  // Blank = the dialogue ends
             }
             case DialogueAction.Close c -> {}
         }
     }
 
+    /**
+     * Sends the next page. If the target does not exist (deleted page, empty dialogue) the player gets the END marker
+     * and the window closes, instead of being left staring at a button that does nothing.
+     */
     private static void sendPage(ServerPlayer player, Mob npc, String pageId) {
         DialoguePage page = pageId.isBlank() ? Npcs.dialogue(npc).startPage() : Npcs.dialogue(npc).page(pageId);
-        if (page != null) PacketDistributor.sendToPlayer(player, new OpenDialoguePayload(npc.getId(), page));
+        PacketDistributor.sendToPlayer(player, new OpenDialoguePayload(npc.getId(), page != null ? page : DialoguePage.END));
+        NpcTalking.touch(npc, player);
+    }
+
+    public static void dialogueClose(DialogueClosePayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (player.level().getEntity(payload.entityId()) instanceof Mob npc) NpcTalking.stop(npc, player);
     }
 
 

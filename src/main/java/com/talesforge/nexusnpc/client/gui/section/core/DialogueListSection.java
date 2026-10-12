@@ -39,7 +39,7 @@ public final class DialogueListSection implements NpcGuiSection {
         addWidget.accept(Button.builder(label, b -> {
                     Minecraft mc = Minecraft.getInstance();
                     mc.setScreen(new DialogueListScreen(mc.screen, session.get(NpcSettingFields.DIALOGUE),
-                            updated -> session.set(NpcSettingFields.DIALOGUE, updated)));
+                            updated -> session.set(NpcSettingFields.DIALOGUE, updated), session.entityId()));
                 })
                 .bounds(x, y, width, 20).build());
         return 22;

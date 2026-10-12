@@ -23,6 +23,7 @@ public class ListRow extends AbstractWidget {
     @Nullable private final Component subtitle;
     @Nullable private final Icon icon;
     private final boolean selected;
+    private int subtitleColor = UiTheme.TEXT_DIM;
 
     public ListRow(int x, int y, int width, Component label, @Nullable Component subtitle,
                    @Nullable Icon icon, boolean selected, Runnable onClick) {
@@ -31,6 +32,12 @@ public class ListRow extends AbstractWidget {
         this.icon = icon;
         this.selected = selected;
         this.onClick = onClick;
+    }
+
+    /** For warnings: a red second line. */
+    public ListRow subtitleColor(int color) {
+        this.subtitleColor = color;
+        return this;
     }
 
     @Override
@@ -60,7 +67,7 @@ public class ListRow extends AbstractWidget {
         if (subtitle != null) {
             g.drawString(font, label, textX, getY() + 5, color, false);
             String sub = font.plainSubstrByWidth(subtitle.getString(), right - textX);
-            g.drawString(font, sub, textX, getY() + 17, UiTheme.TEXT_DIM, false);
+            g.drawString(font, sub, textX, getY() + 17, subtitleColor, false);
         } else {
             g.drawString(font, label, textX, getY() + (getHeight() - 8) / 2, color, false);
         }

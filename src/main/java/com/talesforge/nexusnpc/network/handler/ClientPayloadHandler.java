@@ -87,6 +87,11 @@ public class ClientPayloadHandler {
 
 
     public static void openDialogue(OpenDialoguePayload payload, IPayloadContext context) {
-        Minecraft.getInstance().setScreen(new DialogueScreen(payload.entityId(), payload.page()));
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof DialogueScreen open && !open.isPreview() && open.entityId() == payload.entityId()) {
+            open.showPage(payload.page());   // Next page of the running conversation: same window, no flicker
+        } else if (!payload.page().isEnd()) {
+            mc.setScreen(new DialogueScreen(payload.entityId(), payload.page()));
+        }
     }
 }

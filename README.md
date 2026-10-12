@@ -108,3 +108,9 @@ See `LICENSE.txt`.
 - All editing screens are built on one responsive base (`PanelScreen`): the panel fits any window size or GUI scale and the content scrolls.
 - Choices (model, skin, attitude, behavior, AI mode, faction, dialogue action and target) open full picker screens with search.
 - Everything is saved as you go: sections write to an `EditorSession` (`session.set(FIELD, value)`), which sends the change to the server a moment later. Trades and dialogue pages are saved on every change too. Creating an NPC still uses the "Create" button.
+
+## Dialogues
+
+- The player's dialogue window is docked to the bottom of the screen: speaker portrait and name, typed-out text, numbered answers with [Trade]/[Quest] tags. Space/click skips the typing, 1-8 pick an answer, long text scrolls. The world keeps running; the NPC stops and turns to the player until the window closes.
+- Text supports `{player}` and `{npc}`.
+- Authoring: answers can be added, removed and reordered; the "where does it lead" picker can create a new page on the spot and a pencil jumps into the linked page; "Preview" plays the conversation in the real window without touching the server.

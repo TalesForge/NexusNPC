@@ -5,6 +5,7 @@ import com.talesforge.nexusnpc.network.payload.*;
 import com.talesforge.nexusnpc.network.handler.ClientPayloadHandler;
 import com.talesforge.nexusnpc.network.payload.action.CreateNpcPayload;
 import com.talesforge.nexusnpc.network.payload.action.DeleteNpcPayload;
+import com.talesforge.nexusnpc.network.payload.action.DialogueClosePayload;
 import com.talesforge.nexusnpc.network.payload.action.EditorStatusPayload;
 import com.talesforge.nexusnpc.network.payload.action.SaveNpcPayload;
 import com.talesforge.nexusnpc.network.payload.screen.*;
@@ -24,6 +25,7 @@ public class ModNetwork {
         registrar.playToServer(CreateNpcPayload.TYPE, CreateNpcPayload.STREAM_CODEC, ServerPayloadHandler::createNpc);
         registrar.playToServer(DeleteNpcPayload.TYPE, DeleteNpcPayload.STREAM_CODEC, ServerPayloadHandler::deleteNpc);
         registrar.playToServer(EditorStatusPayload.TYPE, EditorStatusPayload.STREAM_CODEC, ServerPayloadHandler::editorStatus);
+        registrar.playToServer(DialogueClosePayload.TYPE, DialogueClosePayload.STREAM_CODEC, ServerPayloadHandler::dialogueClose);
         registrar.playToServer(DialogueActionPayload.TYPE, DialogueActionPayload.STREAM_CODEC, ServerPayloadHandler::dialogueAction);
         registrar.playToServer(OpenTradeEditorPayload.TYPE, OpenTradeEditorPayload.STREAM_CODEC, ServerPayloadHandler::openTradeEditor);
     }

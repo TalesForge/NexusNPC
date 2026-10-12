@@ -12,6 +12,7 @@ import com.talesforge.nexusnpc.npc.data.NpcDataSelfTest;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
+import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -60,7 +61,10 @@ public final class NpcEvents {
     /** Server-side editor timeout. */
     @SubscribeEvent
     public static void onTick(EntityTickEvent.Post event) {
-        if (event.getEntity() instanceof Mob mob && !mob.level().isClientSide()) NpcEditing.tick(mob);
+        if (event.getEntity() instanceof Mob mob && !mob.level().isClientSide()) {
+            NpcEditing.tick(mob);
+            NpcTalking.tick(mob);
+        }
     }
 
     /** Edited NPCs are invulnerable. */
@@ -106,6 +110,7 @@ public final class NpcEvents {
         if (start == null) return;  // Nothing to say — let the mob behave like it always did
         if (player instanceof ServerPlayer serverPlayer) {
             PacketDistributor.sendToPlayer(serverPlayer, new OpenDialoguePayload(mob.getId(), start));
+            NpcTalking.touch(mob, serverPlayer);   // The NPC stops and turns to the player
         }
         event.setCancellationResult(handled);
         event.setCanceled(true);

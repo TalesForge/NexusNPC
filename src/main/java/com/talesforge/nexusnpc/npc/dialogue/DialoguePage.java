@@ -14,6 +14,11 @@ public record DialoguePage(String id, String name, String text, List<DialogueOpt
             DialogueOption.CODEC.listOf().fieldOf("options").forGetter(DialoguePage::options)
     ).apply(i, DialoguePage::new));
 
+    /** Sent instead of a real page when an answer leads nowhere: the client closes the dialogue window. */
+    public static final DialoguePage END = new DialoguePage("", "", "", List.of());
+
+    public boolean isEnd() { return id.isEmpty(); }
+
     /** What lists show: the name, or the id if the page was never named. */
     public String displayName() { return name.isBlank() ? id : name; }
 }

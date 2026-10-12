@@ -71,6 +71,13 @@ public record NpcDialogue(String startId, Map<String, DialoguePage> pages) {
         return result;
     }
 
+    /** True if an answer of this page leads to a page that no longer exists. */
+    public boolean hasBrokenLink(DialoguePage page) {
+        return page.options().stream()
+                .flatMap(o -> o.action().targetPages().stream())
+                .anyMatch(target -> !pages.containsKey(target));
+    }
+
     /** An id not used by any page yet. */
     public String freshId() {
         String id;
