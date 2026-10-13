@@ -42,6 +42,10 @@ public class NpcEntity extends PathfinderMob {
     private static final EntityDataAccessor<String> DATA_SKIN =
             SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.STRING);
 
+    /** The NPC's own height in blocks; 0 = "the model's normal height". Clamped to the model's range when read. */
+    private static final EntityDataAccessor<Float> DATA_HEIGHT =
+            SynchedEntityData.defineId(NpcEntity.class, EntityDataSerializers.FLOAT);
+
     public final AnimationState idleAnimationState = new AnimationState();
     private int idleAnimationTimeout = 0;
 
@@ -57,6 +61,7 @@ public class NpcEntity extends PathfinderMob {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_MODEL, NpcModels.DEFAULT_ID.toString());
+        builder.define(DATA_HEIGHT, 0.0F);
         builder.define(DATA_SKIN, NpcRegistries.model(NpcModels.DEFAULT_ID).defaultSkin().toString());
     }
 
@@ -83,6 +88,30 @@ public class NpcEntity extends PathfinderMob {
         refreshDimensions();
     }
 
+    /**
+     * The hitbox height of this NPC (and, on the client, the height its model is built for): its own height if it
+     * was given one, clamped to what the CURRENT model allows, otherwise the model's normal height. Clamping on
+     * read means switching to a model with a different range can never produce an impossible height.
+     */
+    public float getNpcHeight() {
+        com.talesforge.nexusnpc.npc.model.NpcModelType model = NpcRegistries.model(getModelId());
+        float own = entityData.get(DATA_HEIGHT);
+        return own > 0 ? model.clampHeight(own) : model.height();
+    }
+
+    /** Sets the height in blocks and recomputes the hitbox right away. Non-positive resets to the model's normal height. */
+    public void setNpcHeight(float height) {
+        entityData.set(DATA_HEIGHT, height > 0 ? Math.min(height, 8.0F) : 0.0F);
+        refreshDimensions();
+    }
+
+    /** The client learns the model or height from the server through synched data: its hitbox has to follow. */
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (DATA_HEIGHT.equals(key) || DATA_MODEL.equals(key)) refreshDimensions();
+    }
+
     /** Stores whatever is passed in, unparsed — {@link #getSkinTexture()} validates it on read. */
     public void setSkin(String texture) {
         entityData.set(DATA_SKIN, texture);
@@ -102,6 +131,7 @@ public class NpcEntity extends PathfinderMob {
         super.addAdditionalSaveData(tag);
         tag.putString("Model", getModelId().toString());
         tag.putString("Skin", entityData.get(DATA_SKIN));
+        tag.putFloat("Height", entityData.get(DATA_HEIGHT));
     }
 
     @Override
@@ -109,6 +139,7 @@ public class NpcEntity extends PathfinderMob {
         super.readAdditionalSaveData(tag);
         if (tag.contains("Model")) entityData.set(DATA_MODEL, tag.getString("Model"));
         if (tag.contains("Skin")) entityData.set(DATA_SKIN, tag.getString("Skin"));
+        if (tag.contains("Height")) entityData.set(DATA_HEIGHT, tag.getFloat("Height"));
 
         legacyData = readLegacy(tag);
         refreshDimensions();

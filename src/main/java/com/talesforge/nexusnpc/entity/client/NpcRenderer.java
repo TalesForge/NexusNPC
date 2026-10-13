@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.talesforge.nexusnpc.client.model.NpcModelRenderers;
 import com.talesforge.nexusnpc.entity.custom.NpcEntity;
 import com.talesforge.nexusnpc.npc.NpcRegistries;
+import com.talesforge.nexusnpc.npc.model.HeightProfile;
+import com.talesforge.nexusnpc.npc.model.NpcModelType;
 import com.talesforge.nexusnpc.npc.model.NpcModels;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -12,6 +14,7 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -27,6 +30,16 @@ import java.util.Map;
 public class NpcRenderer extends MobRenderer<NpcEntity, EntityModel<NpcEntity>> {
     private final Map<ResourceLocation, EntityModel<NpcEntity>> models;
     private final EntityModel<NpcEntity> fallback;
+    private final Map<ResourceLocation, NpcModelRenderers.Factory> factories = NpcModelRenderers.all();
+
+    /** Models built for one specific height, kept so a frame never rebuilds geometry (an NPC's height rarely changes). */
+    private record HeightKey(ResourceLocation model, HeightProfile profile) {}
+    private final Map<HeightKey, EntityModel<NpcEntity>> heightModels = new LinkedHashMap<>(16, 0.75F, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<HeightKey, EntityModel<NpcEntity>> eldest) {
+            return size() > 128;
+        }
+    };
 
     public NpcRenderer(EntityRendererProvider.Context context) {
         super(context, bake(context, requireDefault()), 0.5f);
@@ -67,8 +80,27 @@ public class NpcRenderer extends MobRenderer<NpcEntity, EntityModel<NpcEntity>> 
                        PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         // Every render call for every NPC goes through here first, so this.model always
         // reflects the entity actually about to be drawn by the time super.render() reads it.
-        this.model = models.getOrDefault(entity.getModelId(), fallback);
+        this.model = modelFor(entity);
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
+    }
+
+    /**
+     * The model for this NPC: the shared one for its model id, or — when the NPC has another height than the model's
+     * normal one and the model can be built for it — a model whose limbs and torso are lengthened to match (no scaling).
+     */
+    private EntityModel<NpcEntity> modelFor(NpcEntity entity) {
+        ResourceLocation id = entity.getModelId();
+        EntityModel<NpcEntity> shared = models.getOrDefault(id, fallback);
+
+        NpcModelRenderers.Factory factory = factories.get(id);
+        NpcModelType type = NpcRegistries.model(id);
+        if (factory == null || !factory.supportsHeight() || !type.supportsHeight()) return shared;
+
+        HeightProfile profile = HeightProfile.of(type, entity.getNpcHeight());
+        if (profile.isNone()) return shared;
+
+        return heightModels.computeIfAbsent(new HeightKey(id, profile),
+                key -> factory.bake(factory.createBodyLayer(profile).bakeRoot()));
     }
 
     @Override

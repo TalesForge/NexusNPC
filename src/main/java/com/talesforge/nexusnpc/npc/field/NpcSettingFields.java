@@ -136,6 +136,22 @@ public final class NpcSettingFields {
         }
     };
 
+    /**
+     * Height of the NPC in blocks (hitbox AND appearance — the model is lengthened, not scaled; see HeightProfile).
+     * Applied after MODEL, whose range limits it. Only for NexusNPC's own entity, and only models that allow
+     * different heights react to it.
+     */
+    public static final NpcSettingField<Double> HEIGHT = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("height"); }
+        public Codec<Double> codec() { return Codec.DOUBLE; }
+        public Double defaultValue() { return 1.8; }
+        public boolean appliesTo(Mob npc) { return npc instanceof NpcEntity; }
+        public Double get(Mob npc) { return npc instanceof NpcEntity e ? (double) e.getNpcHeight() : defaultValue(); }
+        public void set(Mob npc, Double value) {
+            if (npc instanceof NpcEntity e) e.setNpcHeight((float) sanitize(value, defaultValue()));
+        }
+    };
+
     public static final NpcSettingField<Double> MAX_HEALTH = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("max_health"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
@@ -195,6 +211,7 @@ public final class NpcSettingFields {
         register(AI_MODE);
         register(MODEL);
         register(SKIN);
+        register(HEIGHT);
         register(MAX_HEALTH);
         register(DAMAGE);
         register(SPEED);

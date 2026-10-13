@@ -144,5 +144,6 @@
   "gui.nexusnpc.dialogue.answer_count": "ответов: %s",
   "gui.nexusnpc.dialogue.duplicate": "Дублировать этот диалог",
   "gui.nexusnpc.dialogue.copy_suffix": "(копия)",
-  "gui.nexusnpc.dialogue.delete": "Удалить этот диалог"
+  "gui.nexusnpc.dialogue.delete": "Удалить этот диалог",
+  "gui.nexusnpc.height": "Рост"
 }

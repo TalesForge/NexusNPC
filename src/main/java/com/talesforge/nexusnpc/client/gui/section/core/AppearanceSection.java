@@ -10,7 +10,9 @@ import com.talesforge.nexusnpc.client.gui.ui.PickerScreen;
 import com.talesforge.nexusnpc.npc.NpcRegistries;
 import com.talesforge.nexusnpc.npc.field.NpcDataMap;
 import com.talesforge.nexusnpc.npc.field.NpcSettingFields;
+import com.talesforge.nexusnpc.client.gui.element.ValueSlider;
 import com.talesforge.nexusnpc.npc.model.NpcModelSkins;
+import com.talesforge.nexusnpc.npc.model.NpcModelType;
 import com.talesforge.nexusnpc.npc.model.NpcModels;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -57,7 +59,14 @@ public final class AppearanceSection implements NpcGuiSection {
         addWidget.accept(PickerScreen.openerButton(x, y + 24, width, Component.translatable("gui.nexusnpc.skin"),
                 NpcModelSkins.label(skin),
                 () -> openSkinPicker(shownModel, shownSkin)));
-        return 48;
+
+        // Height: only for models whose geometry can be built for several heights
+        NpcModelType type = NpcRegistries.model(model);
+        if (!type.supportsHeight()) return 48;
+        double height = type.clampHeight(session.get(NpcSettingFields.HEIGHT).floatValue());
+        addWidget.accept(new ValueSlider(x, y + 48, width, 20, Component.translatable("gui.nexusnpc.height"),
+                type.minHeight(), type.maxHeight(), height, 0.05, v -> session.set(NpcSettingFields.HEIGHT, v)));
+        return 70;
     }
 
     private void openModelPicker(List<ResourceLocation> models, ResourceLocation current) {
@@ -73,6 +82,10 @@ public final class AppearanceSection implements NpcGuiSection {
             session.set(NpcSettingFields.MODEL, picked);
             // The old skin is almost certainly invalid for the new model: start from that model's own default
             session.set(NpcSettingFields.SKIN, NpcModelSkins.all(picked).get(0));
+            // Keep the height if the new model allows it, otherwise fall back to its normal height
+            NpcModelType next = NpcRegistries.model(picked);
+            double keep = session.get(NpcSettingFields.HEIGHT);
+            session.set(NpcSettingFields.HEIGHT, next.supportsHeight() ? (double) next.clampHeight((float) keep) : (double) next.height());
         }));
     }
 

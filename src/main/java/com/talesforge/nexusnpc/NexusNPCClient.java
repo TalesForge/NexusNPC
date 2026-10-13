@@ -27,7 +27,7 @@ public class NexusNPCClient {
 
         // The core humanoid model registers itself through the SAME registry an addon
         // would use — no special-casing between "core" and "addon" models (see NpcModelRenderers).
-        NpcModelRenderers.register(NpcModels.HUMANOID_ID, NpcModel.LAYER_LOCATION,
+        NpcModelRenderers.registerHeightAware(NpcModels.HUMANOID_ID, NpcModel.LAYER_LOCATION,
                 NpcModel::createBodyLayer, root -> new NpcModel<>(root));
 
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);

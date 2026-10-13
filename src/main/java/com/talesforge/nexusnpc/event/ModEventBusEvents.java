@@ -50,9 +50,10 @@ public class ModEventBusEvents {
     public static void onSize(EntityEvent.Size event) {
         if (event.getEntity() instanceof NpcEntity npc) {
             NpcModelType model = NpcRegistries.model(npc.getModelId());
+            float height = npc.getNpcHeight();   // Its own height if it has one, else the model's normal height
             EntityDimensions dimensions = EntityDimensions
-                    .scalable(model.width(), model.height())
-                    .withEyeHeight(model.eyeHeight());
+                    .scalable(model.width(), height)
+                    .withEyeHeight(model.eyeHeightFor(height));
             event.setNewSize(dimensions);
         }
     }

@@ -144,5 +144,6 @@
   "gui.nexusnpc.dialogue.answer_count": "%s answers",
   "gui.nexusnpc.dialogue.duplicate": "Duplicate this dialogue",
   "gui.nexusnpc.dialogue.copy_suffix": "(copy)",
-  "gui.nexusnpc.dialogue.delete": "Delete this dialogue"
+  "gui.nexusnpc.dialogue.delete": "Delete this dialogue",
+  "gui.nexusnpc.height": "Height"
 }

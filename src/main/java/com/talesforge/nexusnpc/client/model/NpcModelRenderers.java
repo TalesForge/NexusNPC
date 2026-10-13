@@ -8,6 +8,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.LinkedHashMap;
+import com.talesforge.nexusnpc.npc.model.HeightProfile;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -31,6 +32,18 @@ public final class NpcModelRenderers {
         ModelLayerLocation layerLocation();
         LayerDefinition createBodyLayer();
         EntityModel<NpcEntity> bake(ModelPart root);
+
+        /**
+         * True if {@link #createBodyLayer(HeightProfile)} really builds taller/shorter geometry. Models that leave this
+         * false are always drawn at their normal height, whatever height the NPC has.
+         */
+        default boolean supportsHeight() { return false; }
+
+        /**
+         * The geometry for an NPC {@code profile} pixels longer/shorter than normal (see {@link HeightProfile}). Called
+         * on the client at runtime and cached per profile; only used when {@link #supportsHeight()} is true.
+         */
+        default LayerDefinition createBodyLayer(HeightProfile profile) { return createBodyLayer(); }
     }
 
     private static final Map<ResourceLocation, Factory> FACTORIES = new LinkedHashMap<>();
@@ -52,6 +65,19 @@ public final class NpcModelRenderers {
             public ModelLayerLocation layerLocation() { return layer; }
             public LayerDefinition createBodyLayer() { return createBodyLayer.get(); }
             public EntityModel<NpcEntity> bake(ModelPart root) { return bake.apply(root); }
+        });
+    }
+
+    /** Like the convenience overload above, for a model whose geometry can be built for any height. */
+    public static void registerHeightAware(ResourceLocation modelId, ModelLayerLocation layer,
+                                           Function<HeightProfile, LayerDefinition> createBodyLayer,
+                                           Function<ModelPart, EntityModel<NpcEntity>> bake) {
+        register(modelId, new Factory() {
+            public ModelLayerLocation layerLocation() { return layer; }
+            public LayerDefinition createBodyLayer() { return createBodyLayer.apply(HeightProfile.NONE); }
+            public EntityModel<NpcEntity> bake(ModelPart root) { return bake.apply(root); }
+            public boolean supportsHeight() { return true; }
+            public LayerDefinition createBodyLayer(HeightProfile profile) { return createBodyLayer.apply(profile); }
         });
     }
 

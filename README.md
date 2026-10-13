@@ -114,3 +114,7 @@ See `LICENSE.txt`.
 - The player's dialogue window is docked to the bottom of the screen: speaker portrait and name, typed-out text, numbered answers with [Trade]/[Quest] tags. Space/click skips the typing, 1-8 pick an answer, long text scrolls. The world keeps running; the NPC stops and turns to the player until the window closes.
 - Text supports `{player}` and `{npc}`.
 - Authoring: answers can be added, removed and reordered; the "where does it lead" picker can create a new page on the spot and a pencil jumps into the linked page; "Preview" plays the conversation in the real window without touching the server.
+
+## NPC height
+
+NPCs of NexusNPC's own entity can have any height the model allows (humanoid: 1.3-3.0 blocks), set with a slider in the Appearance section. The hitbox follows, and the model is **not scaled**: the limbs and torso are lengthened and the extra length is filled by repeating a band of the skin texture, so every pixel keeps its size and shape; head, hands and feet stay as they are. Addon models opt in with `NpcModelType(..., minHeight, maxHeight)` and `NpcModelRenderers.registerHeightAware(...)`.
