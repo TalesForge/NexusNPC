@@ -120,3 +120,9 @@ See `LICENSE.txt`.
 NPCs of NexusNPC's own entity can have any height the model allows (humanoid: 1.3-3.0 blocks), set with a slider in the Appearance section. The hitbox follows, and the model is **not scaled**: the limbs and torso are lengthened and the extra length is filled by repeating a band of the skin texture, so every pixel keeps its size and shape; head, hands and feet stay as they are. Addon models opt in with `NpcModelType(..., minHeight, maxHeight)` and `NpcModelRenderers.registerHeightAware(...)`.
 
 The humanoid comes in two variants, **Standard** (4 px arms) and **Slim** (3 px arms). They are two separate models (`humanoid`, `humanoid_slim`) built from the same code, because skins belong to a model and the arm layout in the texture differs.
+
+## Equipment, inventory and stock-backed trading
+
+- Every NPC mob can carry items: its **equipment** (hands and armor, the mob's own vanilla slots) and an **inventory** (27 slots through a data attachment; villagers and piglins use the inventory they already have). Both are opened together, in one window laid out like the vanilla player inventory, from the editor's "Items" section.
+- **Drop items on death** (off by default): an NPC keeps its things unless you switch it on.
+- **Trading goods** can be *Unlimited* (as before) or *From inventory*: the goods are taken from the NPC's inventory, the payment goes into it, and a trade is sold out when the stock runs out.

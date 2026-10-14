@@ -3,6 +3,7 @@ package com.talesforge.nexusnpc.npc.quest;
 import com.talesforge.nexusnpc.NexusNPC;
 import com.talesforge.nexusnpc.npc.data.NpcAiMode;
 import com.talesforge.nexusnpc.npc.data.NpcData;
+import com.talesforge.nexusnpc.npc.storage.NpcInventory;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -33,6 +34,13 @@ public final class ModAttachments {
             ATTACHMENT_TYPES.register("npc_data", () -> AttachmentType.builder(() -> NpcData.create(NpcAiMode.VANILLA))
                     .serialize(NpcData.CODEC)
                     .build());
+
+    /**
+     * The backpack of an NPC that has no inventory of its own. Created lazily (getData on first use), so mobs that
+     * never carry anything never get one. Use {@code NpcStorage#inventory} instead of touching this directly.
+     */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<NpcInventory>> NPC_INVENTORY =
+            ATTACHMENT_TYPES.register("npc_inventory", () -> AttachmentType.serializable(NpcInventory::new).build());
 
     private ModAttachments() {}
 }

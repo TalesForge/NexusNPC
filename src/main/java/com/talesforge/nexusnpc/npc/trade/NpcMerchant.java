@@ -1,6 +1,10 @@
 package com.talesforge.nexusnpc.npc.trade;
 
 import com.talesforge.nexusnpc.npc.Npcs;
+import com.talesforge.nexusnpc.npc.data.NpcTradeMode;
+import com.talesforge.nexusnpc.npc.storage.NpcStorage;
+import net.minecraft.world.SimpleContainer;
+import java.util.List;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Mob;
@@ -36,13 +40,55 @@ public final class NpcMerchant implements Merchant {
     public MerchantOffers getOffers() {
         if (cachedOffers == null) {
             cachedOffers = new MerchantOffers();
-            for (TradeOffer offer : Npcs.trades(mob).offers()) cachedOffers.add(offer.toMerchantOffer());
+            for (TradeOffer offer : Npcs.trades(mob).offers()) cachedOffers.add(offer.toMerchantOffer(maxUsesOf(offer)));
         }
         return cachedOffers;
     }
 
+    /** Unlimited, or — for a shopkeeper with a stock — however many times the inventory can still supply the result. */
+    private int maxUsesOf(TradeOffer offer) {
+        if (Npcs.tradeMode(mob) != NpcTradeMode.STOCK) return Integer.MAX_VALUE;
+        int perTrade = Math.max(1, offer.result().getCount());
+        return NpcStorage.count(NpcStorage.inventory(mob), offer.result()) / perTrade;
+    }
+
     @Override public void overrideOffers(MerchantOffers offers) {}  // Not loot-table-driven — nothing to override
-    @Override public void notifyTrade(MerchantOffer offer) { offer.increaseUses(); mob.playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F); }
+
+    @Override
+    public void notifyTrade(MerchantOffer offer) {
+        offer.increaseUses();
+        mob.playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F);
+        if (!mob.level().isClientSide() && Npcs.tradeMode(mob) == NpcTradeMode.STOCK) settle(offer);
+    }
+
+    /**
+     * The player has paid and taken the goods (the menu did that): now the NPC's side of the deal. The goods leave its
+     * inventory and the payment goes in. Payment that no longer fits falls at its feet rather than disappearing.
+     */
+    private void settle(MerchantOffer offer) {
+        SimpleContainer inventory = NpcStorage.inventory(mob);
+        ItemStack goods = offer.getResult();
+        NpcStorage.remove(inventory, goods, goods.getCount());
+        for (ItemStack payment : new ItemStack[]{offer.getCostA(), offer.getCostB()}) {
+            if (payment.isEmpty()) continue;
+            ItemStack leftover = inventory.addItem(payment.copy());
+            if (!leftover.isEmpty()) mob.spawnAtLocation(leftover);
+        }
+        refreshStock();
+    }
+
+    /**
+     * Two trades may sell the same item, so after any sale every offer is recomputed from what is really left. The list
+     * object stays the same (the open trade menu holds it); only its entries are replaced.
+     */
+    private void refreshStock() {
+        if (cachedOffers == null) return;
+        List<TradeOffer> trades = Npcs.trades(mob).offers();
+        for (int i = 0; i < cachedOffers.size() && i < trades.size(); i++) {
+            cachedOffers.set(i, trades.get(i).toMerchantOffer(maxUsesOf(trades.get(i))));
+        }
+    }
+
     @Override public void notifyTradeUpdated(ItemStack stack) {}
     @Override public int getVillagerXp() { return villagerXp; }
     @Override public void overrideXp(int xp) { this.villagerXp = xp; }

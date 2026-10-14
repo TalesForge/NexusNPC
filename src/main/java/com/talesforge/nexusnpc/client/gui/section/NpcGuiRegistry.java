@@ -103,5 +103,6 @@ public final class NpcGuiRegistry {
         register(new DialogueListSection.Factory());
 
         register(new TradeSection.Factory());
+        register(new StorageSection.Factory());
     }
 }

@@ -12,6 +12,7 @@ import com.talesforge.nexusnpc.npc.data.NpcDataSelfTest;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
+import com.talesforge.nexusnpc.npc.storage.NpcStorage;
 import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -24,6 +25,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -71,6 +73,17 @@ public final class NpcEvents {
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof Mob mob && NpcEditing.isBeingEdited(mob)) event.setCanceled(true);
+    }
+
+    /**
+     * With "drop items" on, the NPC's inventory falls with its equipment (the equipment itself is handled by vanilla,
+     * through the drop chances NpcStorage pins). With it off, nothing is added: the NPC keeps its things to the grave.
+     */
+    @SubscribeEvent
+    public static void onDrops(LivingDropsEvent event) {
+        if (event.getEntity() instanceof Mob mob && Npcs.isNpc(mob) && Npcs.dropItems(mob)) {
+            NpcStorage.collectInventoryDrops(mob, event.getDrops());
+        }
     }
 
     /** Villager -> zombie villager, piglin -> zombified piglin etc. must not silently lose their NPC data. */

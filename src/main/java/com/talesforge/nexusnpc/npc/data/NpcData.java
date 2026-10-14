@@ -23,7 +23,9 @@ public record NpcData(NpcDialogue dialogue,
                       NpcTrades trades,
                       ResourceLocation attitude,
                       ResourceLocation behavior,
-                      NpcAiMode aiMode) {
+                      NpcAiMode aiMode,
+                      NpcTradeMode tradeMode,
+                      boolean dropItems) {
 
     public static final Codec<NpcData> CODEC = RecordCodecBuilder.create(i -> i.group(
             NpcDialogue.CODEC.optionalFieldOf("dialogue", NpcDialogue.EMPTY).forGetter(NpcData::dialogue),
@@ -31,18 +33,22 @@ public record NpcData(NpcDialogue dialogue,
             NpcTrades.CODEC.optionalFieldOf("trades", NpcTrades.EMPTY).forGetter(NpcData::trades),
             ResourceLocation.CODEC.optionalFieldOf("attitude", NpcAttitudes.DEFAULT_ID).forGetter(NpcData::attitude),
             ResourceLocation.CODEC.optionalFieldOf("behavior", NpcBehaviors.DEFAULT_ID).forGetter(NpcData::behavior),
-            NpcAiMode.CODEC.optionalFieldOf("ai_mode", NpcAiMode.VANILLA).forGetter(NpcData::aiMode)
+            NpcAiMode.CODEC.optionalFieldOf("ai_mode", NpcAiMode.VANILLA).forGetter(NpcData::aiMode),
+            NpcTradeMode.CODEC.optionalFieldOf("trade_mode", NpcTradeMode.INFINITE).forGetter(NpcData::tradeMode),
+            Codec.BOOL.optionalFieldOf("drop_items", false).forGetter(NpcData::dropItems)
     ).apply(i, NpcData::new));
 
     public static NpcData create(NpcAiMode mode) {
         return new NpcData(NpcDialogue.EMPTY, NpcQuests.EMPTY, NpcTrades.EMPTY,
-                NpcAttitudes.DEFAULT_ID, NpcBehaviors.DEFAULT_ID, mode);
+                NpcAttitudes.DEFAULT_ID, NpcBehaviors.DEFAULT_ID, mode, NpcTradeMode.INFINITE, false);
     }
 
-    public NpcData withDialogue(NpcDialogue v) { return new NpcData(v, quests, trades, attitude, behavior, aiMode); }
-    public NpcData withQuests(NpcQuests v) { return new NpcData(dialogue, v, trades, attitude, behavior, aiMode); }
-    public NpcData withTrades(NpcTrades v) { return new NpcData(dialogue, quests, v, attitude, behavior, aiMode); }
-    public NpcData withAttitude(ResourceLocation v) { return new NpcData(dialogue, quests, trades, v, behavior, aiMode); }
-    public NpcData withBehavior(ResourceLocation v) { return new NpcData(dialogue, quests, trades, attitude, v, aiMode); }
-    public NpcData withAiMode(NpcAiMode v) { return new NpcData(dialogue, quests, trades, attitude, behavior, v); }
+    public NpcData withDialogue(NpcDialogue v) { return new NpcData(v, quests, trades, attitude, behavior, aiMode, tradeMode, dropItems); }
+    public NpcData withQuests(NpcQuests v) { return new NpcData(dialogue, v, trades, attitude, behavior, aiMode, tradeMode, dropItems); }
+    public NpcData withTrades(NpcTrades v) { return new NpcData(dialogue, quests, v, attitude, behavior, aiMode, tradeMode, dropItems); }
+    public NpcData withAttitude(ResourceLocation v) { return new NpcData(dialogue, quests, trades, v, behavior, aiMode, tradeMode, dropItems); }
+    public NpcData withBehavior(ResourceLocation v) { return new NpcData(dialogue, quests, trades, attitude, v, aiMode, tradeMode, dropItems); }
+    public NpcData withAiMode(NpcAiMode v) { return new NpcData(dialogue, quests, trades, attitude, behavior, v, tradeMode, dropItems); }
+    public NpcData withTradeMode(NpcTradeMode v) { return new NpcData(dialogue, quests, trades, attitude, behavior, aiMode, v, dropItems); }
+    public NpcData withDropItems(boolean v) { return new NpcData(dialogue, quests, trades, attitude, behavior, aiMode, tradeMode, v); }
 }

@@ -28,6 +28,16 @@ public final class ModMenus {
                 return new TradeEditMenu(containerId, inventory, npc);
             }));
 
+    /** Inventory and equipment of an NPC. Extra data: the entity id (see ServerPayloadHandler#openNpcStorage). */
+    public static final DeferredHolder<MenuType<?>, MenuType<NpcStorageMenu>> NPC_STORAGE =
+            MENU_TYPES.register("npc_storage", () -> IMenuTypeExtension.create((containerId, inventory, buf) -> {
+                Entity entity = inventory.player.level().getEntity(buf.readVarInt());
+                if (!(entity instanceof Mob npc)) {
+                    throw new IllegalStateException("NPC storage menu opened for a non-mob entity");
+                }
+                return new NpcStorageMenu(containerId, inventory, npc);
+            }));
+
     public static void register(IEventBus eventBus) {
         MENU_TYPES.register(eventBus);
     }

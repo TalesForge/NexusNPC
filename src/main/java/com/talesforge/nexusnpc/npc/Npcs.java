@@ -7,6 +7,8 @@ import com.talesforge.nexusnpc.npc.attitude.NpcAttitudes;
 import com.talesforge.nexusnpc.npc.behavior.NpcBehaviors;
 import com.talesforge.nexusnpc.npc.data.NpcAiMode;
 import com.talesforge.nexusnpc.npc.data.NpcData;
+import com.talesforge.nexusnpc.npc.data.NpcTradeMode;
+import com.talesforge.nexusnpc.npc.storage.NpcStorage;
 import com.talesforge.nexusnpc.npc.dialogue.NpcDialogue;
 import com.talesforge.nexusnpc.npc.quest.ModAttachments;
 import com.talesforge.nexusnpc.npc.quest.NpcQuests;
@@ -87,6 +89,7 @@ public final class Npcs {
         if (isNpc(mob)) return false;
         setData(mob, NpcData.create(defaultMode(mob)));
         mob.setPersistenceRequired();  // An NPC must not despawn. Saved in the mob's own NBT, works for every mob type.
+        NpcStorage.applyDropPolicy(mob);  // ...and does not lose the gear it carries unless told to
         return true;
     }
 
@@ -138,6 +141,22 @@ public final class Npcs {
     }
 
     public static NpcAiMode aiMode(Mob mob) { return data(mob).aiMode(); }
+
+    public static NpcTradeMode tradeMode(Mob mob) { return data(mob).tradeMode(); }
+
+    public static boolean dropItems(Mob mob) { return data(mob).dropItems(); }
+
+    public static void setTradeModeData(Mob mob, NpcTradeMode mode) {
+        update(mob, d -> d.withTradeMode(mode));
+        NpcRuntime rt = peekRuntime(mob);
+        if (rt != null && rt.merchant != null) rt.merchant.invalidate();   // The next trade window shows the new mode
+    }
+
+    /** Stores the switch AND pins the mob's equipment drop chances to match it (see NpcStorage#applyDropPolicy). */
+    public static void setDropItems(Mob mob, boolean drop) {
+        update(mob, d -> d.withDropItems(drop));
+        NpcStorage.applyDropPolicy(mob);
+    }
 
     /** Data only (no AI rebuild) — see {@link NpcAi#apply}. */
     public static void setAttitudeData(Mob mob, ResourceLocation id) {

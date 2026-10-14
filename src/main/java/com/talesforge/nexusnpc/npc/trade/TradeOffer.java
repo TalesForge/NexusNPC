@@ -18,6 +18,11 @@ public record TradeOffer(ItemCost cost1, Optional<ItemCost> cost2, ItemStack res
 
     /** For now, there’s no usage limit — I’ll leave the "per N trades" restriction for later. */
     public MerchantOffer toMerchantOffer() {
-        return new MerchantOffer(cost1, cost2, result, Integer.MAX_VALUE, 0, 0.0f);
+        return toMerchantOffer(Integer.MAX_VALUE);
+    }
+
+    /** An offer that can be taken {@code maxUses} times; 0 shows as sold out. */
+    public MerchantOffer toMerchantOffer(int maxUses) {
+        return new MerchantOffer(cost1, cost2, result, maxUses, 0, 0.0f);
     }
 }

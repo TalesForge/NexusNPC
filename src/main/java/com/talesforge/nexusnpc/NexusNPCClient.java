@@ -2,6 +2,7 @@ package com.talesforge.nexusnpc;
 
 import com.talesforge.nexusnpc.api.NexusNpcApi;
 import com.talesforge.nexusnpc.api.NpcTypeEntry;
+import com.talesforge.nexusnpc.client.gui.screen.settings.storage.NpcStorageScreen;
 import com.talesforge.nexusnpc.client.gui.screen.settings.trade.TradeEditScreen;
 import com.talesforge.nexusnpc.client.gui.section.NpcGuiRegistry;
 import com.talesforge.nexusnpc.client.model.NpcModelRenderers;
@@ -57,5 +58,6 @@ public class NexusNPCClient {
     @SubscribeEvent
     static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.TRADE_EDIT.get(), TradeEditScreen::new);
+        event.register(ModMenus.NPC_STORAGE.get(), NpcStorageScreen::new);
     }
 }

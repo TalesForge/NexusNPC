@@ -27,6 +27,7 @@ public class ModNetwork {
         registrar.playToServer(EditorStatusPayload.TYPE, EditorStatusPayload.STREAM_CODEC, ServerPayloadHandler::editorStatus);
         registrar.playToServer(DialogueClosePayload.TYPE, DialogueClosePayload.STREAM_CODEC, ServerPayloadHandler::dialogueClose);
         registrar.playToServer(DialogueActionPayload.TYPE, DialogueActionPayload.STREAM_CODEC, ServerPayloadHandler::dialogueAction);
+        registrar.playToServer(OpenNpcStoragePayload.TYPE, OpenNpcStoragePayload.STREAM_CODEC, ServerPayloadHandler::openNpcStorage);
         registrar.playToServer(OpenTradeEditorPayload.TYPE, OpenTradeEditorPayload.STREAM_CODEC, ServerPayloadHandler::openTradeEditor);
     }
 }

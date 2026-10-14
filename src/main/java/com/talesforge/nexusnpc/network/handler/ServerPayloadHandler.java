@@ -10,6 +10,7 @@ import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
 import com.talesforge.nexusnpc.network.payload.action.DialogueClosePayload;
 import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.item.ModItems;
+import com.talesforge.nexusnpc.menu.NpcStorageMenu;
 import com.talesforge.nexusnpc.menu.TradeEditMenu;
 import com.talesforge.nexusnpc.network.payload.*;
 import com.talesforge.nexusnpc.network.payload.action.CreateNpcPayload;
@@ -17,6 +18,7 @@ import com.talesforge.nexusnpc.network.payload.action.DeleteNpcPayload;
 import com.talesforge.nexusnpc.network.payload.action.EditorStatusPayload;
 import com.talesforge.nexusnpc.network.payload.action.SaveNpcPayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenDialoguePayload;
+import com.talesforge.nexusnpc.network.payload.screen.OpenNpcStoragePayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenTradeEditorPayload;
 import com.talesforge.nexusnpc.npc.dialogue.DialogueAction;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
@@ -141,6 +143,7 @@ public class ServerPayloadHandler {
             case DialogueAction.OpenTrade t -> {
                 NpcMerchant merchant = Npcs.merchant(npc);
                 if (merchant.getTradingPlayer() != null && merchant.getTradingPlayer() != player) return;  // Busy with someone else
+                merchant.invalidate();   // Offers are rebuilt from the inventory as it is NOW
                 merchant.setTradingPlayer(player);
                 merchant.openTradingScreen(player, npc.getDisplayName(), 1);  // Opens the menu AND sends the offers to the client
                 if (!(player.containerMenu instanceof MerchantMenu)) merchant.setTradingPlayer(null);  // Failed to open
@@ -212,5 +215,25 @@ public class ServerPayloadHandler {
                         (containerId, inventory, p) -> new TradeEditMenu(containerId, inventory, npc),
                         Component.translatable("gui.nexusnpc.trade.title")),
                 buf -> buf.writeVarInt(npc.getId()));  // Extra data: lets the CLIENT build the same menu
+    }
+
+    /** Opens the inventory-and-equipment window of an NPC — same permission, lock and distance rules as the trade editor. */
+    public static void openNpcStorage(OpenNpcStoragePayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (!canManageNpcs(player)) {
+            player.sendSystemMessage(Component.translatable("message.nexusnpc.no_permission"));
+            return;
+        }
+
+        Entity entity = player.level().getEntity(payload.entityId());
+        if (!(entity instanceof Mob npc) || !Npcs.isEligible(npc)) return;
+        if (!NpcEditing.isEditedBy(npc, player)) return;
+        if (player.distanceToSqr(npc) > NpcEditing.MAX_DIST_SQ) return;
+
+        player.openMenu(
+                new SimpleMenuProvider(
+                        (containerId, inventory, p) -> new NpcStorageMenu(containerId, inventory, npc),
+                        Component.translatable("gui.nexusnpc.storage.title")),
+                buf -> buf.writeVarInt(npc.getId()));
     }
 }

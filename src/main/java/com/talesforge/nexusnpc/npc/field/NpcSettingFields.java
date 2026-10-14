@@ -6,6 +6,7 @@ import com.talesforge.nexusnpc.entity.custom.NpcEntity;
 import com.talesforge.nexusnpc.npc.NpcStats;
 import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.data.NpcAiMode;
+import com.talesforge.nexusnpc.npc.data.NpcTradeMode;
 import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.npc.attitude.NpcAttitudes;
 import com.talesforge.nexusnpc.npc.behavior.NpcBehaviors;
@@ -152,6 +153,24 @@ public final class NpcSettingFields {
         }
     };
 
+    /** Where the goods of this NPC's trades come from: nowhere (unlimited) or its own inventory. */
+    public static final NpcSettingField<NpcTradeMode> TRADE_MODE = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("trade_mode"); }
+        public Codec<NpcTradeMode> codec() { return NpcTradeMode.CODEC; }
+        public NpcTradeMode defaultValue() { return NpcTradeMode.INFINITE; }
+        public NpcTradeMode get(Mob npc) { return Npcs.tradeMode(npc); }
+        public void set(Mob npc, NpcTradeMode value) { Npcs.setTradeModeData(npc, value); }
+    };
+
+    /** Whether the NPC's equipment and inventory fall when it dies. Off by default: an NPC does not lose its things. */
+    public static final NpcSettingField<Boolean> DROP_ITEMS = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("drop_items"); }
+        public Codec<Boolean> codec() { return Codec.BOOL; }
+        public Boolean defaultValue() { return false; }
+        public Boolean get(Mob npc) { return Npcs.dropItems(npc); }
+        public void set(Mob npc, Boolean value) { Npcs.setDropItems(npc, value); }
+    };
+
     public static final NpcSettingField<Double> MAX_HEALTH = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("max_health"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
@@ -212,6 +231,8 @@ public final class NpcSettingFields {
         register(MODEL);
         register(SKIN);
         register(HEIGHT);
+        register(TRADE_MODE);
+        register(DROP_ITEMS);
         register(MAX_HEALTH);
         register(DAMAGE);
         register(SPEED);
