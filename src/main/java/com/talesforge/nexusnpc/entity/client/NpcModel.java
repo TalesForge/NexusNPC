@@ -42,9 +42,17 @@ public class NpcModel<T extends NpcEntity> extends HierarchicalModel<T> {
     private static final int BAND_ROWS = 6;
     private static final int PART_ROWS = 12;
 
-    /** The normal-height geometry. */
+    public static final ModelLayerLocation LAYER_LOCATION_SLIM =
+            new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "npc_slim"), "main");
+
+    /** The normal-height geometry (Standard arms). */
     public static LayerDefinition createBodyLayer() {
-        return createBodyLayer(HeightProfile.NONE);
+        return createBodyLayer(HeightProfile.NONE, false);
+    }
+
+    /** Standard (4 px) arms at the given height. */
+    public static LayerDefinition createBodyLayer(HeightProfile profile) {
+        return createBodyLayer(profile, false);
     }
 
     /**
@@ -52,7 +60,7 @@ public class NpcModel<T extends NpcEntity> extends HierarchicalModel<T> {
      * the head, hands and feet are untouched, and the extra length is filled by repeating a band of the texture,
      * so texels stay square and the same size at every height.
      */
-    public static LayerDefinition createBodyLayer(HeightProfile profile) {
+    public static LayerDefinition createBodyLayer(HeightProfile profile, boolean slim) {
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
 
@@ -71,11 +79,15 @@ public class NpcModel<T extends NpcEntity> extends HierarchicalModel<T> {
         Body.addOrReplaceChild("LegR",
                 sliced(CubeListBuilder.create(), 0, 16, -2.0F, 0.0F, -2.0F, 4.0F, 4.0F, profile.legs()),
                 PartPose.offset(-2.0F, hipY, 0.0F));
+        // Slim arms are 3 px wide instead of 4. The shoulder pivots stay where they are and the arm keeps its inner edge
+        // flush with the torso, so only the outer edge moves in. (The texture layout differs too: see the slim skins.)
+        float armWidth = slim ? 3.0F : 4.0F;
+        float armRightX = slim ? -2.0F : -3.0F;
         Body.addOrReplaceChild("ArmR",
-                sliced(CubeListBuilder.create(), 40, 16, -3.0F, -2.0F, -2.0F, 4.0F, 4.0F, profile.arms()),
+                sliced(CubeListBuilder.create(), 40, 16, armRightX, -2.0F, -2.0F, armWidth, 4.0F, profile.arms()),
                 PartPose.offset(-5.0F, shoulderY + 2.0F, 0.0F));
         Body.addOrReplaceChild("ArmL",
-                sliced(CubeListBuilder.create(), 32, 48, -1.0F, -2.0F, -2.0F, 4.0F, 4.0F, profile.arms()),
+                sliced(CubeListBuilder.create(), 32, 48, -1.0F, -2.0F, -2.0F, armWidth, 4.0F, profile.arms()),
                 PartPose.offset(5.0F, shoulderY + 2.0F, 0.0F));
         Body.addOrReplaceChild("Head",
                 CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F, new CubeDeformation(0.0F)),

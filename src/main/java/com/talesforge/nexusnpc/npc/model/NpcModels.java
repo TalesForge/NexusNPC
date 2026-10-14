@@ -13,6 +13,16 @@ public final class NpcModels {
             ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "humanoid");
     public static final ResourceLocation DEFAULT_ID = HUMANOID_ID;
 
+    /**
+     * The same humanoid with 3-pixel ("Slim") instead of 4-pixel ("Standard") arms. A separate MODEL rather than a
+     * setting, because skins belong to a model: a slim skin has a different arm layout in the texture, so each
+     * variant has its own default skin and its own skin list.
+     */
+    public static final ResourceLocation HUMANOID_SLIM_ID =
+            ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "humanoid_slim");
+    public static final ResourceLocation HUMANOID_SLIM_DEFAULT_SKIN =
+            ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "textures/entity/npc/default_slim.png");
+
     /** The one skin that always exists no matter what — every model's own default is separate from this. */
     public static final ResourceLocation HUMANOID_DEFAULT_SKIN =
             ResourceLocation.fromNamespaceAndPath(NexusNPC.MOD_ID, "textures/entity/npc/default.png");
@@ -31,6 +41,10 @@ public final class NpcModels {
         REGISTER.register("humanoid", () -> new NpcModelType(
                 0.6f, 1.8f, 1.62f, 0.94f, HUMANOID_DEFAULT_SKIN,
                 MIN_HUMANOID_HEIGHT, MAX_HUMANOID_HEIGHT));  // Any height in this range: see HeightProfile
+        // Only the arms differ, so hitbox, eye height and height range are identical
+        REGISTER.register("humanoid_slim", () -> new NpcModelType(
+                0.6f, 1.8f, 1.62f, 0.94f, HUMANOID_SLIM_DEFAULT_SKIN,
+                MIN_HUMANOID_HEIGHT, MAX_HUMANOID_HEIGHT));
     }
 
     private NpcModels() {}

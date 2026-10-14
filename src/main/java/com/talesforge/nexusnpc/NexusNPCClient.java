@@ -29,6 +29,9 @@ public class NexusNPCClient {
         // would use — no special-casing between "core" and "addon" models (see NpcModelRenderers).
         NpcModelRenderers.registerHeightAware(NpcModels.HUMANOID_ID, NpcModel.LAYER_LOCATION,
                 NpcModel::createBodyLayer, root -> new NpcModel<>(root));
+        // Same geometry with slim (3 px) arms; a model of its own because skins belong to a model
+        NpcModelRenderers.registerHeightAware(NpcModels.HUMANOID_SLIM_ID, NpcModel.LAYER_LOCATION_SLIM,
+                profile -> NpcModel.createBodyLayer(profile, true), root -> new NpcModel<>(root));
 
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }

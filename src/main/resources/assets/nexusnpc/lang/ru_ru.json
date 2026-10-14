@@ -65,7 +65,7 @@
   "npc_behavior.nexusnpc.avoid_players": "Избегать игроков",
   "npc_behavior.nexusnpc.stay": "Стоять",
   "npc_behavior.nexusnpc.wander": "Бродить",
-  "npc_model.nexusnpc.humanoid": "Гуманоид",
+  "npc_model.nexusnpc.humanoid": "Гуманоид (Standard)",
   "gui.nexusnpc.faction": "Фракция",
   "gui.nexusnpc.classes": "Классы (a, b, c)",
   "gui.nexusnpc.team": "Команда",
@@ -145,5 +145,8 @@
   "gui.nexusnpc.dialogue.duplicate": "Дублировать этот диалог",
   "gui.nexusnpc.dialogue.copy_suffix": "(копия)",
   "gui.nexusnpc.dialogue.delete": "Удалить этот диалог",
-  "gui.nexusnpc.height": "Рост"
+  "gui.nexusnpc.height": "Рост",
+  "npc_model.nexusnpc.humanoid.desc": "Руки шириной 4 пикселя.",
+  "npc_model.nexusnpc.humanoid_slim": "Гуманоид (Slim)",
+  "npc_model.nexusnpc.humanoid_slim.desc": "Руки шириной 3 пикселя. Нужен скин для тонких рук."
 }

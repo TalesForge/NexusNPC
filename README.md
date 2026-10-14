@@ -118,3 +118,5 @@ See `LICENSE.txt`.
 ## NPC height
 
 NPCs of NexusNPC's own entity can have any height the model allows (humanoid: 1.3-3.0 blocks), set with a slider in the Appearance section. The hitbox follows, and the model is **not scaled**: the limbs and torso are lengthened and the extra length is filled by repeating a band of the skin texture, so every pixel keeps its size and shape; head, hands and feet stay as they are. Addon models opt in with `NpcModelType(..., minHeight, maxHeight)` and `NpcModelRenderers.registerHeightAware(...)`.
+
+The humanoid comes in two variants, **Standard** (4 px arms) and **Slim** (3 px arms). They are two separate models (`humanoid`, `humanoid_slim`) built from the same code, because skins belong to a model and the arm layout in the texture differs.

@@ -65,7 +65,7 @@
   "npc_behavior.nexusnpc.avoid_players": "Avoid players",
   "npc_behavior.nexusnpc.stay": "Stay",
   "npc_behavior.nexusnpc.wander": "Wander",
-  "npc_model.nexusnpc.humanoid": "Humanoid",
+  "npc_model.nexusnpc.humanoid": "Humanoid (Standard)",
   "gui.nexusnpc.faction": "Faction",
   "gui.nexusnpc.classes": "Classes (a, b, c)",
   "gui.nexusnpc.team": "Team",
@@ -145,5 +145,8 @@
   "gui.nexusnpc.dialogue.duplicate": "Duplicate this dialogue",
   "gui.nexusnpc.dialogue.copy_suffix": "(copy)",
   "gui.nexusnpc.dialogue.delete": "Delete this dialogue",
-  "gui.nexusnpc.height": "Height"
+  "gui.nexusnpc.height": "Height",
+  "npc_model.nexusnpc.humanoid.desc": "Arms 4 pixels wide.",
+  "npc_model.nexusnpc.humanoid_slim": "Humanoid (Slim)",
+  "npc_model.nexusnpc.humanoid_slim.desc": "Arms 3 pixels wide. Needs a slim skin."
 }
