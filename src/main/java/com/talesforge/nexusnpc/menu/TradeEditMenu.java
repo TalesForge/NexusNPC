@@ -2,73 +2,140 @@ package com.talesforge.nexusnpc.menu;
 
 import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
-import net.minecraft.world.entity.Mob;
 import com.talesforge.nexusnpc.npc.trade.NpcTrades;
+import com.talesforge.nexusnpc.npc.trade.PaymentRule;
 import com.talesforge.nexusnpc.npc.trade.TradeOffer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.trading.ItemCost;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Trade layout editor. The grid slots are "ghosts": they never hold or take real items,
- * they only remember WHICH item and how many. Clicking with a stack in hand copies it
- * into the slot and leaves the hand untouched, so nothing can be lost or duplicated.
- * Every change to the grid is applied to the NPC immediately.
+ * The editor of ONE trade. Three "ghost" slots hold a template of each item (clicking with an item copies it in, the real
+ * item never leaves your hand): the two payments on the left, the result on the right. Beside each payment two toggles
+ * decide what counts as that item (see {@link PaymentRule}), kept in a ContainerData so the client shows them live.
+ * <p>
+ * Every change is saved to the NPC at once. A trade that has no payment or no result yet is simply not saved (the
+ * previous version, if there is one, stays), and the screen says so.
  */
 public class TradeEditMenu extends AbstractContainerMenu {
-    public static final int ROWS = 8;
-    private static final int COLS = 3;  // cost1, cost2, result
-    public static final int GRID_SLOTS = ROWS * COLS;
-    public static final int INV_Y = 18 + ROWS * 18 + 14;
+    public static final int GRID_SLOTS = 3;     // payment 1, payment 2, result
+    public static final int WIDTH = 214;
+
+    public static final int[] SLOT_X = {12, 12, 180};
+    public static final int[] SLOT_Y = {28, 50, 39};
+    public static final int INV_Y = 98;
+    public static final int INV_X = (WIDTH - 176) / 2 + 8;
+
+    /** Button ids (clickMenuButton) = indexes in the rules data: payment 1 "any variant", payment 1 "undamaged only", then payment 2. */
+    public static final int BUTTON_ANY_1 = 0, BUTTON_PERFECT_1 = 1, BUTTON_ANY_2 = 2, BUTTON_PERFECT_2 = 3;
 
     private final Mob npc;
-    private final SimpleContainer tradeContainer;
-    private final ServerPlayer serverPlayer;
+    private final SimpleContainer tradeContainer = new SimpleContainer(GRID_SLOTS);
+    private final ContainerData rules = new SimpleContainerData(4);
+    @Nullable private final ServerPlayer serverPlayer;
+    private int index;   // Position of this trade in the NPC's list; -1 until a new trade is first saved
 
-    public TradeEditMenu(int containerId, Inventory playerInv, Mob npc) {
+    /** @param tradeIndex the trade to edit, or -1 for a new one (the client passes -1: only the server uses it) */
+    public TradeEditMenu(int containerId, Inventory playerInv, Mob npc, int tradeIndex) {
         super(ModMenus.TRADE_EDIT.get(), containerId);
         this.npc = npc;
         this.serverPlayer = playerInv.player instanceof ServerPlayer sp ? sp : null;
-        this.tradeContainer = new SimpleContainer(GRID_SLOTS);
-        if (serverPlayer != null) seedFrom(Npcs.trades(npc));  // The client gets it via slot sync
 
-        // Registered AFTER seeding, so loading the current trades does not count as a change
-        if (serverPlayer != null) tradeContainer.addListener(container -> saveTrades());
+        List<TradeOffer> existing = serverPlayer != null ? Npcs.trades(npc).offers() : List.of();
+        this.index = tradeIndex >= 0 && tradeIndex < existing.size() ? tradeIndex : -1;
+        if (index >= 0) seed(existing.get(index));
 
-        for (int row = 0; row < ROWS; row++)
-            for (int col = 0; col < COLS; col++)
-                addSlot(new GhostSlot(tradeContainer, row * COLS + col, 8 + col * 18, 18 + row * 18));
+        // Registered AFTER seeding, so loading the trade does not count as a change
+        if (serverPlayer != null) tradeContainer.addListener(container -> saveTrade());
 
+        for (int i = 0; i < GRID_SLOTS; i++) addSlot(new GhostSlot(tradeContainer, i, SLOT_X[i], SLOT_Y[i]));
         for (int r = 0; r < 3; r++)
             for (int c = 0; c < 9; c++)
-                addSlot(new Slot(playerInv, 9 + r * 9 + c, 8 + c * 18, INV_Y + r * 18));
+                addSlot(new Slot(playerInv, 9 + r * 9 + c, INV_X + c * 18, INV_Y + r * 18));
         for (int c = 0; c < 9; c++)
-            addSlot(new Slot(playerInv, c, 8 + c * 18, INV_Y + 58));
+            addSlot(new Slot(playerInv, c, INV_X + c * 18, INV_Y + 58));
+        addDataSlots(rules);
     }
 
-    private void seedFrom(NpcTrades trades) {
-        List<TradeOffer> offers = trades.offers();
-        for (int i = 0; i < offers.size() && i < ROWS; i++) {
-            TradeOffer offer = offers.get(i);
-            tradeContainer.setItem(i * COLS, new ItemStack(offer.cost1().item(), offer.cost1().count()));
-            int row = i;
-            offer.cost2().ifPresent(c -> tradeContainer.setItem(row * COLS + 1, new ItemStack(c.item(), c.count())));
-            tradeContainer.setItem(i * COLS + 2, offer.result().copy());
+    private void seed(TradeOffer offer) {
+        tradeContainer.setItem(0, offer.cost1().copy());
+        tradeContainer.setItem(1, offer.cost2().copy());
+        tradeContainer.setItem(2, offer.result().copy());
+        rules.set(BUTTON_ANY_1, offer.rule1().anyVariant() ? 1 : 0);
+        rules.set(BUTTON_PERFECT_1, offer.rule1().perfectOnly() ? 1 : 0);
+        rules.set(BUTTON_ANY_2, offer.rule2().anyVariant() ? 1 : 0);
+        rules.set(BUTTON_PERFECT_2, offer.rule2().perfectOnly() ? 1 : 0);
+    }
+
+    /** For the screen: the state of one toggle (a button id). */
+    public boolean toggle(int id) { return rules.get(id) != 0; }
+
+    // ================= saving =================
+
+    private PaymentRule rule(int payment) {
+        return new PaymentRule(toggle(payment * 2), toggle(payment * 2 + 1));
+    }
+
+    /**
+     * Writes this trade into the NPC's list. A payment may sit in either slot: if only the second one is filled it is
+     * treated as the first. Without a payment or without a result nothing is saved.
+     */
+    private void saveTrade() {
+        if (serverPlayer == null) return;
+
+        ItemStack pay1 = tradeContainer.getItem(0);
+        ItemStack pay2 = tradeContainer.getItem(1);
+        ItemStack result = tradeContainer.getItem(2);
+        PaymentRule rule1 = rule(0);
+        PaymentRule rule2 = rule(1);
+        if (pay1.isEmpty() && !pay2.isEmpty()) {
+            pay1 = pay2;
+            rule1 = rule2;
+            pay2 = ItemStack.EMPTY;
+            rule2 = PaymentRule.DEFAULT;
         }
+        if (pay1.isEmpty() || result.isEmpty()) return;
+
+        TradeOffer offer = new TradeOffer(pay1.copy(), pay2.copy(), result.copy(), rule1, rule2);
+        NpcTrades trades = Npcs.trades(npc);
+        NpcTrades updated;
+        if (index >= 0 && index < trades.size()) {
+            updated = trades.with(index, offer);
+        } else if (trades.size() < NpcTrades.MAX) {
+            updated = trades.plus(offer);
+            index = updated.size() - 1;
+        } else {
+            return;
+        }
+        Npcs.attach(npc);   // Saving a trade makes an ordinary mob an NPC (data only; the AI is untouched in VANILLA mode)
+        Npcs.setTrades(npc, updated);
     }
 
-    // ========== Clicks ==========
+    /** The toggles beside the payments, pressed on the client and executed here. */
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id < 0 || id >= 4) return false;
+        rules.set(id, rules.get(id) == 0 ? 1 : 0);
+        saveTrade();
+        return true;
+    }
+
+    // ================= ghost slots =================
+
+    /** Click with an item in hand: copy it into the slot (the real item stays in your hand). */
     @Override
     public void clicked(int slotId, int button, ClickType clickType, Player player) {
         // Drags (QUICK_CRAFT) go to vanilla: GhostSlot#mayPlace is false, so it does nothing there.
@@ -110,8 +177,11 @@ public class TradeEditMenu extends AbstractContainerMenu {
         }
     }
 
-    // ========== Lifetime ==========
-    /** Runs every server tick while open: keeps the NPC frozen (the old editor screen's "closed" packet releases the lock). */
+    @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
+
+    // ================= lifecycle =================
+
+    /** Runs every server tick while open: keeps the NPC frozen (same editing lock as before). */
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
@@ -123,32 +193,10 @@ public class TradeEditMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);  // Vanilla returns whatever the player holds in hand
-        saveTrades();           // Normally a no-op by now: every change was already saved as it happened
-        // The editing lock is intentionally NOT released here: the player usually returns to the
-        // settings screen, whose pings keep it alive. If they don't, it expires by itself in 5 s.
+        saveTrade();            // Normally a no-op by now: every change was already saved as it happened
+        // The editing lock is intentionally NOT released here: the player usually returns to the editor, whose pings
+        // keep it alive. If they don't, it expires by itself in 5 s.
     }
-
-    /** Writes the grid to the NPC. Called after EVERY change, so a crash or a disconnect never loses a trade. */
-    private void saveTrades() {
-        if (serverPlayer == null) return;
-
-        List<TradeOffer> offers = new ArrayList<>();
-        for (int row = 0; row < ROWS; row++) {
-            ItemStack cost1 = tradeContainer.getItem(row * COLS);
-            ItemStack cost2 = tradeContainer.getItem(row * COLS + 1);
-            ItemStack result = tradeContainer.getItem(row * COLS + 2);
-            if (cost1.isEmpty() || result.isEmpty()) continue;   // incomplete row
-
-            offers.add(new TradeOffer(
-                    new ItemCost(cost1.getItem(), cost1.getCount()),
-                    cost2.isEmpty() ? Optional.empty() : Optional.of(new ItemCost(cost2.getItem(), cost2.getCount())),
-                    result.copy()));
-        }
-        Npcs.attach(npc);  // Saving trades makes an ordinary mob an NPC (data only; the AI is untouched in VANILLA mode)
-        Npcs.setTrades(npc, new NpcTrades(offers));
-    }
-
-    @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
 
     @Override
     public boolean stillValid(Player player) {

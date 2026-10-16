@@ -18,6 +18,10 @@ public final class NpcRuntime {
     @Nullable public UUID editorId;
     public int editorLastPingTick;
 
+    // ----- ageing -----
+    /** The age a baby had before this tick's vanilla ageing, so a growth lock can put it back; MIN_VALUE = none. */
+    public int frozenAge = Integer.MIN_VALUE;
+
     // ----- conversation -----
     @Nullable public UUID talkerId;
     public int talkerLastTick;

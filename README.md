@@ -126,3 +126,11 @@ The humanoid comes in two variants, **Standard** (4 px arms) and **Slim** (3 px 
 - Every NPC mob can carry items: its **equipment** (hands and armor, the mob's own vanilla slots) and an **inventory** (27 slots through a data attachment; villagers and piglins use the inventory they already have). Both are opened together, in one window laid out like the vanilla player inventory, from the editor's "Items" section.
 - **Drop items on death** (off by default): an NPC keeps its things unless you switch it on.
 - **Trading goods** can be *Unlimited* (as before) or *From inventory*: the goods are taken from the NPC's inventory, the payment goes into it, and a trade is sold out when the stock runs out.
+
+Trades are edited as a list of rows, one trade per row, laid out like a villager's trade window (the player pays on the left, an arrow, the player gets on the right), with buttons to move or clear a trade. Item data components (custom names, enchantments, modded data) are kept exactly: costs demand the item with its data, results are given unchanged, and when a shopkeeper takes payment it keeps the items the player really handed over.
+
+Trades are a list (any number of them, like dialogues); each opens in a single-trade editor laid out like the villager window. For each payment you choose what counts as that item: **exact data** (name, enchantments, mod data) or **any variant** of the item type, and **any wear** or **undamaged only** (how worn an item is never matters, only whether it is perfect). When a shopkeeper takes payment it keeps the items exactly as the player handed them over.
+
+## Age
+
+For ordinary mobs the editor has an **Age** section: **Baby** switches a mob between baby and adult (every mob with a baby form reacts: animals, villagers, zombies, piglins, modded ones that follow vanilla), and **Grows up** (on by default) can be turned off so a baby stays a baby for good; a locked baby also refuses food that would speed up its growth. NexusNPC's own humanoid has no baby form: a child there is a shorter NPC (see its height).

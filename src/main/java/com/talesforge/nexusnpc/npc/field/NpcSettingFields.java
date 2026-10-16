@@ -171,6 +171,32 @@ public final class NpcSettingFields {
         public void set(Mob npc, Boolean value) { Npcs.setDropItems(npc, value); }
     };
 
+    /**
+     * Baby or adult. Every mob that HAS a baby form (animals, villagers, zombies, piglins... and modded ones that
+     * follow vanilla's {@code setBaby}) switches; for the rest the call does nothing. It is vanilla state, saved and
+     * synced by the mob itself. Not for NexusNPC's own humanoid: a child there is simply a shorter NPC (see HEIGHT).
+     */
+    public static final NpcSettingField<Boolean> BABY = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("baby"); }
+        public Codec<Boolean> codec() { return Codec.BOOL; }
+        public Boolean defaultValue() { return false; }
+        public boolean appliesTo(Mob npc) { return !(npc instanceof NpcEntity); }
+        public Boolean get(Mob npc) { return npc.isBaby(); }
+        public void set(Mob npc, Boolean value) {
+            if (npc.isBaby() != value) npc.setBaby(value);   // Never "re-set" the current state: that would restart the growth timer
+        }
+    };
+
+    /** True: babies of this NPC stay babies for good. Has no effect on mobs that never grow up anyway (zombies...). */
+    public static final NpcSettingField<Boolean> AGE_LOCK = new NpcSettingField<>() {
+        public ResourceLocation id() { return rl("age_lock"); }
+        public Codec<Boolean> codec() { return Codec.BOOL; }
+        public Boolean defaultValue() { return false; }
+        public boolean appliesTo(Mob npc) { return !(npc instanceof NpcEntity); }
+        public Boolean get(Mob npc) { return Npcs.ageLock(npc); }
+        public void set(Mob npc, Boolean value) { Npcs.setAgeLock(npc, value); }
+    };
+
     public static final NpcSettingField<Double> MAX_HEALTH = new NpcSettingField<>() {
         public ResourceLocation id() { return rl("max_health"); }
         public Codec<Double> codec() { return Codec.DOUBLE; }
@@ -233,6 +259,8 @@ public final class NpcSettingFields {
         register(HEIGHT);
         register(TRADE_MODE);
         register(DROP_ITEMS);
+        register(BABY);
+        register(AGE_LOCK);
         register(MAX_HEALTH);
         register(DAMAGE);
         register(SPEED);

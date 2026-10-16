@@ -25,7 +25,7 @@ public final class ModMenus {
                 if (!(entity instanceof Mob npc)) {
                     throw new IllegalStateException("Trade editor menu opened for a non-mob entity");
                 }
-                return new TradeEditMenu(containerId, inventory, npc);
+                return new TradeEditMenu(containerId, inventory, npc, -1);
             }));
 
     /** Inventory and equipment of an NPC. Extra data: the entity id (see ServerPayloadHandler#openNpcStorage). */

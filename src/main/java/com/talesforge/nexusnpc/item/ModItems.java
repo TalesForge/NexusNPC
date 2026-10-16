@@ -55,7 +55,7 @@ public class ModItems {
     );
 
     public static final DeferredItem<Item> NPC_SPAWN_EGG = regItem("npc_spawn_egg",
-            () -> new DeferredSpawnEggItem(ModEntities.NPC, 0x31afaf, 0xffac00,
+            () -> new DeferredSpawnEggItem(ModEntities.NPC, 0xe0e0e0, 0xcccccc,
                     new Item.Properties())
     );
 

@@ -2,7 +2,7 @@ package com.talesforge.nexusnpc.client.gui.section.core;
 
 import com.talesforge.nexusnpc.NexusNPC;
 import com.talesforge.nexusnpc.client.gui.EditorSession;
-import com.talesforge.nexusnpc.client.gui.screen.settings.trade.TradeEditScreen;
+import com.talesforge.nexusnpc.client.gui.screen.settings.trade.TradeListScreen;
 import com.talesforge.nexusnpc.client.gui.ui.PickerScreen;
 import com.talesforge.nexusnpc.npc.data.NpcTradeMode;
 import com.talesforge.nexusnpc.npc.field.NpcSettingFields;
@@ -48,7 +48,7 @@ public final class TradeSection implements NpcGuiSection {
         if (entityId < 0) return 0;
         addWidget.accept(Button.builder(Component.translatable("gui.nexusnpc.trade.edit"),
                         b -> {
-                            TradeEditScreen.rememberParent(Minecraft.getInstance().screen);
+                            TradeListScreen.rememberParent(Minecraft.getInstance().screen);
                             PacketDistributor.sendToServer(new OpenTradeEditorPayload(entityId));
                         }
                 )

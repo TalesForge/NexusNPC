@@ -2,6 +2,8 @@ package com.talesforge.nexusnpc.npc.trade;
 
 import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.data.NpcTradeMode;
+import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
+import net.minecraft.server.level.ServerPlayer;
 import com.talesforge.nexusnpc.npc.storage.NpcStorage;
 import net.minecraft.world.SimpleContainer;
 import java.util.List;
@@ -33,7 +35,28 @@ public final class NpcMerchant implements Merchant {
     /** Call after the trade list changed. */
     public void invalidate() { cachedOffers = null; }
 
-    @Override public void setTradingPlayer(@Nullable Player player) { this.tradingPlayer = player; }
+    /**
+     * Vanilla calls this with the player when the trade window opens and with null when it closes (MerchantMenu#removed).
+     * The NPC must not walk away in between — the dialogue that led here has just closed and let go of it — so an open
+     * trade keeps it in conversation, and closing the trade lets it go.
+     */
+    @Override
+    public void setTradingPlayer(@Nullable Player player) {
+        Player previous = this.tradingPlayer;
+        this.tradingPlayer = player;
+        if (mob.level().isClientSide()) return;
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            NpcTalking.touch(mob, serverPlayer);
+        } else if (player == null && previous != null) {
+            NpcTalking.stop(mob, previous);
+        }
+    }
+
+    /** The trade window failed to open: forget the player WITHOUT ending the conversation (the dialogue is still open). */
+    public void abortTrade() {
+        this.tradingPlayer = null;
+    }
     @Override @Nullable public Player getTradingPlayer() { return tradingPlayer; }
 
     @Override
@@ -69,7 +92,11 @@ public final class NpcMerchant implements Merchant {
         SimpleContainer inventory = NpcStorage.inventory(mob);
         ItemStack goods = offer.getResult();
         NpcStorage.remove(inventory, goods, goods.getCount());
-        for (ItemStack payment : new ItemStack[]{offer.getCostA(), offer.getCostB()}) {
+        // The items the player really handed over (data components included), not the template the offer asked for
+        List<ItemStack> paid = offer instanceof NpcMerchantOffer exact
+                ? exact.takePayment()
+                : List.of(offer.getCostA(), offer.getCostB());
+        for (ItemStack payment : paid) {
             if (payment.isEmpty()) continue;
             ItemStack leftover = inventory.addItem(payment.copy());
             if (!leftover.isEmpty()) mob.spawnAtLocation(leftover);

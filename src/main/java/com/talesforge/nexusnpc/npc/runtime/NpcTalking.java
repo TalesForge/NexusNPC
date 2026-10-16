@@ -40,7 +40,17 @@ public final class NpcTalking {
     public static void stop(Mob mob, @Nullable Player who) {
         NpcRuntime rt = Npcs.peekRuntime(mob);
         if (rt == null || rt.talkerId == null) return;
-        if (who == null || rt.talkerId.equals(who.getUUID())) rt.talkerId = null;
+        if (who != null && !rt.talkerId.equals(who.getUUID())) return;
+        // The dialogue window closes the moment the trade window opens: that must not release the NPC while it trades.
+        // The merchant releases it itself when the trade window closes.
+        if (who != null && rt.merchant != null && rt.merchant.getTradingPlayer() == who) return;
+        rt.talkerId = null;
+    }
+
+    /** True while this player has a trade window open with the NPC. */
+    private static boolean isTrading(NpcRuntime rt, UUID player) {
+        return rt.merchant != null && rt.merchant.getTradingPlayer() != null
+                && rt.merchant.getTradingPlayer().getUUID().equals(player);
     }
 
     /** Server tick for every mob: release the lock when it is no longer valid, otherwise keep facing the player. */
@@ -49,6 +59,7 @@ public final class NpcTalking {
         if (rt == null || rt.talkerId == null) return;
 
         @Nullable UUID id = rt.talkerId;
+        if (isTrading(rt, id)) rt.talkerLastTick = mob.tickCount;   // A long trade is not an idle conversation
         Player player = mob.level().getPlayerByUUID(id);
         boolean invalid = player == null
                 || !player.isAlive()

@@ -1,5 +1,7 @@
 package com.talesforge.nexusnpc.network.handler;
 
+import com.talesforge.nexusnpc.client.gui.screen.settings.trade.TradeListScreen;
+import com.talesforge.nexusnpc.network.payload.screen.OpenTradeListPayload;
 import com.talesforge.nexusnpc.client.gui.EditorSession;
 import com.talesforge.nexusnpc.client.gui.screen.DialogueScreen;
 import com.talesforge.nexusnpc.client.gui.screen.settings.NpcEditorScreen;
@@ -92,6 +94,16 @@ public class ClientPayloadHandler {
             open.showPage(payload.page());   // Next page of the running conversation: same window, no flicker
         } else if (!payload.page().isEnd()) {
             mc.setScreen(new DialogueScreen(payload.entityId(), payload.page()));
+        }
+    }
+
+    /** The trades of an NPC: refresh the open trade list, or open it (returning to whatever asked for it). */
+    public static void openTradeList(OpenTradeListPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof TradeListScreen list && list.entityId() == payload.entityId()) {
+            list.refresh(payload.trades());
+        } else {
+            mc.setScreen(new TradeListScreen(TradeListScreen.takeParent(), payload.entityId(), payload.trades()));
         }
     }
 }

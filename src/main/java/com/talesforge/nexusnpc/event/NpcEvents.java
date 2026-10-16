@@ -12,12 +12,15 @@ import com.talesforge.nexusnpc.npc.data.NpcDataSelfTest;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
+import com.talesforge.nexusnpc.npc.runtime.NpcRuntime;
 import com.talesforge.nexusnpc.npc.storage.NpcStorage;
 import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -69,6 +72,28 @@ public final class NpcEvents {
         }
     }
 
+    /**
+     * The growth lock, in two halves around vanilla's own ageing. A baby animal's age counts up towards 0 inside the
+     * mob's tick; before it we note the age, after it we put it back, so the baby stays exactly as old as it was
+     * (not reset: a baby that was almost grown stays almost grown). Only babies of locked NPC mobs are touched.
+     */
+    @SubscribeEvent
+    public static void onTickPre(EntityTickEvent.Pre event) {
+        if (!(event.getEntity() instanceof AgeableMob mob) || mob.level().isClientSide()) return;
+        if (mob.getAge() < 0 && Npcs.isNpc(mob) && Npcs.ageLock(mob)) {
+            Npcs.runtime(mob).frozenAge = mob.getAge();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onTickPost(EntityTickEvent.Post event) {
+        if (!(event.getEntity() instanceof AgeableMob mob) || mob.level().isClientSide()) return;
+        NpcRuntime rt = Npcs.peekRuntime(mob);
+        if (rt == null || rt.frozenAge == Integer.MIN_VALUE) return;
+        if (mob.getAge() != rt.frozenAge) mob.setAge(rt.frozenAge);
+        rt.frozenAge = Integer.MIN_VALUE;
+    }
+
     /** Edited NPCs are invulnerable. */
     @SubscribeEvent
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
@@ -102,6 +127,15 @@ public final class NpcEvents {
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getTarget() instanceof Mob mob) || !Npcs.isNpc(mob)) return;
+
+        // Feeding a baby makes it grow up faster; a locked baby must not eat (and waste) the food either.
+        // Checked first and for BOTH hands: sneaking or the off hand must not get around it.
+        if (mob instanceof Animal animal && animal.isBaby() && Npcs.ageLock(mob) && animal.isFood(event.getItemStack())) {
+            event.setCancellationResult(InteractionResult.FAIL);
+            event.setCanceled(true);
+            return;
+        }
+
         if (event.getHand() != InteractionHand.MAIN_HAND) return;  // Fired once per hand
         Player player = event.getEntity();
         if (player.isSecondaryUseActive()) return;

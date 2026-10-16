@@ -146,6 +146,11 @@ public final class Npcs {
 
     public static boolean dropItems(Mob mob) { return data(mob).dropItems(); }
 
+    /** True: a baby of this NPC never grows up (see NpcEvents#onTickPre). */
+    public static boolean ageLock(Mob mob) { return data(mob).ageLock(); }
+
+    public static void setAgeLock(Mob mob, boolean locked) { update(mob, d -> d.withAgeLock(locked)); }
+
     public static void setTradeModeData(Mob mob, NpcTradeMode mode) {
         update(mob, d -> d.withTradeMode(mode));
         NpcRuntime rt = peekRuntime(mob);

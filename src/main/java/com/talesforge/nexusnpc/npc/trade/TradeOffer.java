@@ -2,27 +2,42 @@ package com.talesforge.nexusnpc.npc.trade;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 
-import java.util.Optional;
-
-/** MerchantOffer does not have its own public codec — this is what is actually stored/edited. */
-public record TradeOffer(ItemCost cost1, Optional<ItemCost> cost2, ItemStack result) {
+/**
+ * One trade of an NPC: up to two payments, one result, and for each payment the rule that says what counts as that item.
+ * Everything is stored as complete item stacks, so the data components of an item (names, enchantments, whatever a mod
+ * keeps on it) are never lost. The second payment is an empty stack when there is none.
+ */
+public record TradeOffer(ItemStack cost1, ItemStack cost2, ItemStack result, PaymentRule rule1, PaymentRule rule2) {
     public static final Codec<TradeOffer> CODEC = RecordCodecBuilder.create(i -> i.group(
-            ItemCost.CODEC.fieldOf("cost1").forGetter(TradeOffer::cost1),
-            ItemCost.CODEC.optionalFieldOf("cost2").forGetter(TradeOffer::cost2),
-            ItemStack.CODEC.fieldOf("result").forGetter(TradeOffer::result)
+            ItemStack.CODEC.fieldOf("cost1").forGetter(TradeOffer::cost1),
+            ItemStack.OPTIONAL_CODEC.optionalFieldOf("cost2", ItemStack.EMPTY).forGetter(TradeOffer::cost2),
+            ItemStack.CODEC.fieldOf("result").forGetter(TradeOffer::result),
+            PaymentRule.CODEC.optionalFieldOf("rule1", PaymentRule.DEFAULT).forGetter(TradeOffer::rule1),
+            PaymentRule.CODEC.optionalFieldOf("rule2", PaymentRule.DEFAULT).forGetter(TradeOffer::rule2)
     ).apply(i, TradeOffer::new));
 
-    /** For now, there’s no usage limit — I’ll leave the "per N trades" restriction for later. */
+    public static final StreamCodec<RegistryFriendlyByteBuf, TradeOffer> STREAM_CODEC = StreamCodec.composite(
+            ItemStack.STREAM_CODEC, TradeOffer::cost1,
+            ItemStack.OPTIONAL_STREAM_CODEC, TradeOffer::cost2,
+            ItemStack.STREAM_CODEC, TradeOffer::result,
+            PaymentRule.STREAM_CODEC, TradeOffer::rule1,
+            PaymentRule.STREAM_CODEC, TradeOffer::rule2,
+            TradeOffer::new);
+
+    public boolean hasSecondPayment() { return !cost2.isEmpty(); }
+
+    /** An unlimited offer. */
     public MerchantOffer toMerchantOffer() {
         return toMerchantOffer(Integer.MAX_VALUE);
     }
 
     /** An offer that can be taken {@code maxUses} times; 0 shows as sold out. */
     public MerchantOffer toMerchantOffer(int maxUses) {
-        return new MerchantOffer(cost1, cost2, result, maxUses, 0, 0.0f);
+        return new NpcMerchantOffer(this, maxUses);
     }
 }

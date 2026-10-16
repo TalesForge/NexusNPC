@@ -69,6 +69,8 @@ public final class NpcGuiRegistry {
             if (disabledHere.contains(factory.id())) continue;
             // Model/skin only exist on NexusNPC's own entity types; an ordinary mob keeps its look
             if (factory.id().equals(AppearanceSection.ID) && !isNpcType(entityTypeId)) continue;
+            // ...and the age switch only for ordinary mobs: NexusNPC's own humanoid has no baby form (use its height)
+            if (factory.id().equals(AgeSection.ID) && isNpcType(entityTypeId)) continue;
             result.add(factory);
         }
         return result;
@@ -95,6 +97,7 @@ public final class NpcGuiRegistry {
         bootstrapped = true;
         register(new IdentitySection.Factory());
         register(new StatsSection.Factory());
+        register(new AgeSection.Factory());
         register(new LogicSection.Factory());
         NexusRpgClientCompat.registerGui();  // faction / classes / team (only if NexusRPG is installed)
         register(new AppearanceSection.Factory());

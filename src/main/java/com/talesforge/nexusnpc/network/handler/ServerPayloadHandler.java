@@ -5,6 +5,8 @@ import com.talesforge.nexusnpc.api.NexusNpcApi;
 import com.talesforge.nexusnpc.config.Config;
 import com.talesforge.nexusnpc.npc.Npcs;
 import com.talesforge.nexusnpc.npc.trade.NpcMerchant;
+import com.talesforge.nexusnpc.npc.trade.NpcTrades;
+import org.jetbrains.annotations.Nullable;
 import com.talesforge.nexusnpc.npc.runtime.NpcEditing;
 import com.talesforge.nexusnpc.npc.runtime.NpcTalking;
 import com.talesforge.nexusnpc.network.payload.action.DialogueClosePayload;
@@ -15,10 +17,13 @@ import com.talesforge.nexusnpc.menu.TradeEditMenu;
 import com.talesforge.nexusnpc.network.payload.*;
 import com.talesforge.nexusnpc.network.payload.action.CreateNpcPayload;
 import com.talesforge.nexusnpc.network.payload.action.DeleteNpcPayload;
+import com.talesforge.nexusnpc.network.payload.action.EditTradePayload;
+import com.talesforge.nexusnpc.network.payload.action.TradeListActionPayload;
 import com.talesforge.nexusnpc.network.payload.action.EditorStatusPayload;
 import com.talesforge.nexusnpc.network.payload.action.SaveNpcPayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenDialoguePayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenNpcStoragePayload;
+import com.talesforge.nexusnpc.network.payload.screen.OpenTradeListPayload;
 import com.talesforge.nexusnpc.network.payload.screen.OpenTradeEditorPayload;
 import com.talesforge.nexusnpc.npc.dialogue.DialogueAction;
 import com.talesforge.nexusnpc.npc.dialogue.DialoguePage;
@@ -146,7 +151,7 @@ public class ServerPayloadHandler {
                 merchant.invalidate();   // Offers are rebuilt from the inventory as it is NOW
                 merchant.setTradingPlayer(player);
                 merchant.openTradingScreen(player, npc.getDisplayName(), 1);  // Opens the menu AND sends the offers to the client
-                if (!(player.containerMenu instanceof MerchantMenu)) merchant.setTradingPlayer(null);  // Failed to open
+                if (!(player.containerMenu instanceof MerchantMenu)) merchant.abortTrade();  // Failed to open: the dialogue is still open, keep the NPC
             }
             case DialogueAction.AcceptQuest a -> {
                 NpcQuest quest = Npcs.quests(npc).get(a.questId());
@@ -198,23 +203,71 @@ public class ServerPayloadHandler {
     }
 
 
-    public static void openTradeEditor(OpenTradeEditorPayload payload, IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
+    /**
+     * The common checks of every trade-editing request: the player may manage NPCs, the target is an allowed mob, the
+     * player holds its editing lock and is close enough. Returns null (after telling the player why, if it matters) otherwise.
+     */
+    @Nullable
+    private static Mob tradeTarget(ServerPlayer player, int entityId) {
         if (!canManageNpcs(player)) {
             player.sendSystemMessage(Component.translatable("message.nexusnpc.no_permission"));
-            return;
+            return null;
         }
+        Entity entity = player.level().getEntity(entityId);
+        if (!(entity instanceof Mob npc) || !Npcs.isEligible(npc)) return null;
+        if (!NpcEditing.isEditedBy(npc, player)) return null;  // Same lock as saveNpc
+        if (player.distanceToSqr(npc) > NpcEditing.MAX_DIST_SQ) return null;
+        return npc;
+    }
 
-        Entity entity = player.level().getEntity(payload.entityId());
-        if (!(entity instanceof Mob npc) || !Npcs.isEligible(npc)) return;
-        if (!NpcEditing.isEditedBy(npc, player)) return;  // Same lock as saveNpc
-        if (player.distanceToSqr(npc) > NpcEditing.MAX_DIST_SQ) return;
+    private static void sendTradeList(ServerPlayer player, Mob npc) {
+        PacketDistributor.sendToPlayer(player, new OpenTradeListPayload(npc.getId(), Npcs.trades(npc)));
+    }
+
+    /** "Edit trades" in the editor, and every later refresh request: send the trade list. */
+    public static void openTradeEditor(OpenTradeEditorPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        Mob npc = tradeTarget(player, payload.entityId());
+        if (npc != null) sendTradeList(player, npc);
+    }
+
+    /** Open the editor of one trade (a menu with real item slots). */
+    public static void editTrade(EditTradePayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        Mob npc = tradeTarget(player, payload.entityId());
+        if (npc == null) return;
+
+        int count = Npcs.trades(npc).size();
+        int index = payload.index() >= 0 && payload.index() < count ? payload.index() : -1;
+        if (index < 0 && count >= NpcTrades.MAX) return;   // No room for another trade
 
         player.openMenu(
                 new SimpleMenuProvider(
-                        (containerId, inventory, p) -> new TradeEditMenu(containerId, inventory, npc),
+                        (containerId, inventory, p) -> new TradeEditMenu(containerId, inventory, npc, index),
                         Component.translatable("gui.nexusnpc.trade.title")),
                 buf -> buf.writeVarInt(npc.getId()));  // Extra data: lets the CLIENT build the same menu
+    }
+
+    /** Move, duplicate or delete a trade, then send the refreshed list back. */
+    public static void tradeListAction(TradeListActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)) return;
+        Mob npc = tradeTarget(player, payload.entityId());
+        if (npc == null) return;
+
+        NpcTrades trades = Npcs.trades(npc);
+        int i = payload.index();
+        if (i < 0 || i >= trades.size()) return;
+
+        NpcTrades result = switch (payload.action()) {
+            case TradeListActionPayload.MOVE_UP -> i > 0 ? trades.swapped(i, i - 1) : trades;
+            case TradeListActionPayload.MOVE_DOWN -> i < trades.size() - 1 ? trades.swapped(i, i + 1) : trades;
+            case TradeListActionPayload.DUPLICATE -> trades.size() < NpcTrades.MAX ? trades.duplicated(i) : trades;
+            case TradeListActionPayload.DELETE -> trades.without(i);
+            default -> trades;
+        };
+        Npcs.attach(npc);
+        Npcs.setTrades(npc, result);
+        sendTradeList(player, npc);
     }
 
     /** Opens the inventory-and-equipment window of an NPC — same permission, lock and distance rules as the trade editor. */
